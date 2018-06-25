@@ -28,7 +28,16 @@ public class TestUtils {
             System.setIn(stdInput_);
             System.setOut(new PrintStream(stdOut_));
 
-            f.accept(writer, reader);
+            try {
+                f.accept(writer, reader);
+            } finally {
+                try {                 stdInput_.close(); } catch (IOException ignored) {  }
+                try {                   stdOut_.close(); } catch (IOException ignored) {  }
+                try {                    writer.close(); } catch (IOException ignored) {  }
+                try {                    reader.close(); } catch (IOException ignored) {  }
+                try { pipedOutputStreamToStdIn_.close(); } catch (IOException ignored) {  }
+                try {       pipeOutReaderStream.close(); } catch (IOException ignored) {  }
+            }
 
         } finally {
             System.setIn(sIn); System.setOut(sOut);

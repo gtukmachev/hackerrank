@@ -17,7 +17,8 @@ public class BFS_ShortestReachInAGraph {
     private static final int START_MARKER = -16;
     private static final int WAIT_MARKER  = -20;
 
-    private static List<Integer> EMPTY_LIST = new ArrayList<>(0);
+    @SuppressWarnings("MismatchedQueryAndUpdateOfCollection")
+    private static final List<Integer> EMPTY_LIST = new ArrayList<>(0);
 
     private static HashMap<Integer, List<Integer>> buildAgesTable(int[] ages) {
         HashMap<Integer, List<Integer>> agesTable = new HashMap<>();
@@ -68,7 +69,7 @@ public class BFS_ShortestReachInAGraph {
         return p;
     }
 
-    public static int[] printPaths(int n, int s, int[] ages) {
+    private static int[] printPaths(int n, int s, int[] ages) {
         int[] paths = calcPaths(n, s, ages);
         for (int i = 1; i < paths.length; i++) {
             if (i != s) {
@@ -79,14 +80,14 @@ public class BFS_ShortestReachInAGraph {
         return paths;
     }
 
-    public static class MyQueue<T> {
-        Stack<T> stackNewestOnTop = new Stack<T>();
-        Stack<T> stackOldestOnTop = new Stack<T>();
+    static class MyQueue<T> {
+        Stack<T> stackNewestOnTop = new Stack<>();
+        Stack<T> stackOldestOnTop = new Stack<>();
 
-        public MyQueue<T> push(T value) { stackNewestOnTop.push(value); return this; }
-        public    T peek()        { checkOutput(); return stackOldestOnTop.peek(); }
-        public    T pop()         { checkOutput(); return stackOldestOnTop.pop(); }
-        public boolean hasNext()  { return stackOldestOnTop.size() > 0 || stackNewestOnTop.size() > 0; }
+         MyQueue<T> push(T value) { stackNewestOnTop.push(value); return this; }
+                  //T peek()        { checkOutput(); return stackOldestOnTop.peek(); }
+                  T pop()         { checkOutput(); return stackOldestOnTop.pop(); }
+            boolean hasNext()  { return stackOldestOnTop.size() > 0 || stackNewestOnTop.size() > 0; }
 
 
         private void checkOutput() {
