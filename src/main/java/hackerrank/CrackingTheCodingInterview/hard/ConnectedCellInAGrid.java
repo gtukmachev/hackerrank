@@ -1,4 +1,4 @@
-package hackerrank;
+package hackerrank.CrackingTheCodingInterview.hard;
 
 import java.util.Arrays;
 import java.util.function.BiConsumer;

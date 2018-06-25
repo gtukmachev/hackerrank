@@ -1,4 +1,4 @@
-package hackerrank;
+package hackerrank.CrackingTheCodingInterview.easy;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -7,7 +7,7 @@ import java.util.Map;
 /**
  * Created by grigory@clearscale.net on 6/19/2018.
  */
-public class MagazineHash {
+public class HashTables_RansomNote {
 
     static void checkMagazine(String[] magazine, String[] note) {
         if (note == null || note.length == 0) { System.out.print("Yes"); return; }

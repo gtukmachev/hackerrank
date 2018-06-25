@@ -1,11 +1,11 @@
-package hackerrank;
+package hackerrank.CrackingTheCodingInterview.medium;
 
 import java.util.Arrays;
 
 /**
  * Created by grigory@clearscale.net on 6/19/2018.
  */
-public class SimpleNumbers {
+public class TimeComplexity_Primality {
 
 
     private static void isSimple(int[] ints) {

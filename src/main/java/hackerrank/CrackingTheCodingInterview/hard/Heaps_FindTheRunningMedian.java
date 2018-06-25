@@ -1,9 +1,11 @@
-package hackerrank;
+package hackerrank.CrackingTheCodingInterview.hard;
+
+import hackerrank.IntHeap;
 
 /**
  * Created by grigory@clearscale.net on 5/14/2018.
  */
-public class Median {
+public class Heaps_FindTheRunningMedian {
     private static IntHeap leftHeap = new IntHeap(true);
     private static IntHeap rightHeap = new IntHeap(false);
 

@@ -1,4 +1,4 @@
-package hackerrank;
+package hackerrank.CrackingTheCodingInterview.medium;
 
 import org.junit.Assert;
 import org.junit.Test;
