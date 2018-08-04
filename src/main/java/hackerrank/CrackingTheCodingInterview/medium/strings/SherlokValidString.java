@@ -64,7 +64,7 @@ public class SherlokValidString {
         @Test public void t7() { String s = "qwertyaaaqwertybbb"; assertEquals( "NO", isValid(s) ); }
 
         @Test public void t13() throws IOException {
-            Path path = Paths.get("c:/projects/own/hacker_rank_java8/src/main/java/hackerrank/CrackingTheCodingInterview/easy/strings/input13.txt");
+            Path path = Paths.get("src/main/java/"+SherlokValidString.class.getCanonicalName().replace(".", "/").concat("_t13.txt"));
             String line = Files.lines(path).findFirst().orElse("111222222222");
 
             assertEquals( "YES", isValid(line) );
