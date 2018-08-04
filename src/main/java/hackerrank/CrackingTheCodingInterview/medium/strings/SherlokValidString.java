@@ -1,8 +1,7 @@
-package hackerrank.CrackingTheCodingInterview.easy.strings;
+package hackerrank.CrackingTheCodingInterview.medium.strings;
 
 import org.junit.Test;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;

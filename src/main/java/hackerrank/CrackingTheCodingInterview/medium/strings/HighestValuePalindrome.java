@@ -1,4 +1,4 @@
-package hackerrank.CrackingTheCodingInterview.easy.strings;
+package hackerrank.CrackingTheCodingInterview.medium.strings;
 
 public class HighestValuePalindrome {
 
