@@ -3,15 +3,14 @@ package hackerrank.practice.algorithms.strings.maximum_palindromes;
 import org.junit.Assert;
 import org.junit.Test;
 
-import java.io.File;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Stream;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 /**
  * Created by grigory@clearscale.net on 8/4/2018.
@@ -21,7 +20,6 @@ public class MaxCountPalidromes {
     private static char[] s;
     private static Map<Pair, BigInteger> C_Caash = new HashMap<>();
     private static Map<Pair, BigInteger> Mult_Chash = new HashMap<>();
-
     private static class Pair {
         final int f;
         final int s;
@@ -46,19 +44,67 @@ public class MaxCountPalidromes {
         }
     }
 
+    private static class BinaryTaskAggregator<T> {
+
+        private Function<T, T> merge;
+        private Function<Integer, T> calculate;
+
+        public BinaryTaskAggregator(Function<T, T> merge, Supplier<T> calculate) {
+            this.merge = merge;
+            this.calculate = calculate;
+        }
+
+        private List<Map<Integer, T>> layers = new ArrayList<>();
+
+        private T get(int layer, int iFrom, int iTo) {
+            if (iFrom > iTo) return null;
+            if (iFrom == iTo) return pull(layer, iFrom);
+
+            T leftSolution;
+            T centerSolution; int iFromNext, iToNext;
+            T rightSolution;
+
+            if (iFrom % 2 == 0) { iFromNext = iFrom / 2;      leftSolution = null;               }
+                           else { iFromNext = iFrom / 2 + 1;  leftSolution = pull(layer, iFrom); }
+
+            if (iTo % 2 == 0) { iToNext = iTo / 2 - 1; rightSolution = pull(layer, iTo); }
+                         else { iToNext = iTo / 2;     rightSolution = null;             }
+
+            centerSolution = get (layer + 1, iFromNext, iToNext);
+
+            T leftAndCenter = doMerge(leftSolution, centerSolution);
+            T soltion  = doMerge(leftSolution, centerSolution);
+        }
+
+        private T pull(int layer, int iFrom) {
+            if (layer == layers.size()) {
+                layers.add(new HashMap<>());
+            }
+
+            return layers
+                    .get(layer)
+                    .computeIfAbsent(iFrom, calculate);
+
+        }
+
+    }
+
+
     // Complete the initialize function below.
     private static void initialize(String s) {
         MaxCountPalidromes.s = s.toCharArray();
 
     }
 
-    // Complete the answerQuery function below.
+    // Complete the answerQuery fu nction below.
     private static int answerQuery(final int l, final int r) {
         Map<Character, Integer> letters = new HashMap<>();
 
         for ( int i=l-1; i < r; i++ ) {
             letters.merge(s[i], 1, (prev, add) -> prev + add );
         }
+
+        if (letters.size() == 1) return 1;
 
         List<Integer> pairs = new ArrayList<>(letters.size() / 2);
         int noPairsCount = 0;
@@ -133,9 +179,13 @@ public class MaxCountPalidromes {
         @Test public void t7() { Assert.assertEquals(2, getMax("aabbc")); }
         @Test public void t8() { Assert.assertEquals(4, getMax("aabbcd")); }
 
-        @Test public void tH2() throws IOException {
-            Iterator<String> input = Files.readAllLines( getFileForTest("tH2-input.txt") ).iterator();
-            Iterator<String> output = Files.readAllLines( getFileForTest("tH2-output.txt") ).iterator();
+        @Test public void tH2() throws IOException  { testByIncomeFile(2); }
+        @Test public void tH28() throws IOException  { testByIncomeFile(28); }
+
+
+        public void testByIncomeFile(int id) throws IOException {
+            Iterator<String> input = Files.readAllLines( getFileForTest("tH" + id + "-input.txt") ).iterator();
+            Iterator<String> output = Files.readAllLines( getFileForTest("tH" + id + "-output.txt") ).iterator();
             initialize(input.next());
 
             input.next(); // skip the 2nd line
@@ -147,7 +197,8 @@ public class MaxCountPalidromes {
                             .toArray();
                     int out = Integer.parseInt(output.next());
 
-                    System.out.print("" + in[0] + " " + in[1] + " -> (" + out + ") -> ");
+                    System.out.print("C:[" + C_Caash.size() + "] [M:" + Mult_Chash.size() + "] " +
+                            "|" + in[0] + " " + in[1] + " -> (" + out + ") -> ");
                     int r = answerQuery(in[0], in[1]);
                     System.out.print(r);
 
