@@ -10,7 +10,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.function.BiFunction;
-import java.util.function.Function;
 
 /**
  * Created by grigory@clearscale.net on 8/4/2018.
@@ -46,17 +45,56 @@ public class MaxCountPalidromes {
 
     private static class BinaryTaskAggregator<T> {
 
-        private Function<Integer, T> calculate;
+        private BiFunction<Byte, Integer, T> calculateChunk;
+        private BiFunction<Integer, Integer, T> calculatePartialChunk;
         private BiFunction<T, T, T> merge;
         private Map<Integer, T>[] layers;
+        private byte shift0; // the initial data splits to chunks in 2^shift0 (16 items for 4)
+        private int chunkMaxOffset; // the initial data splits to chunks in 2^shift0 (16 items for 4)
 
-        public BinaryTaskAggregator(Function<Integer, T> calculate, BiFunction<T, T, T> merge) {
-            this.calculate = calculate;
+        public BinaryTaskAggregator( byte shift0,
+                BiFunction<Integer, Integer, T> calculatePartialChunk,
+                BiFunction<Byte, Integer, T> calculateChunk,
+                BiFunction<T, T, T> merge) {
+            this.shift0 = shift0;
+            this.chunkMaxOffset = (1 << shift0) - 1;
+            this.calculatePartialChunk = calculatePartialChunk;
+            this.calculateChunk = calculateChunk;
             this.merge = merge;
             int log2 = (int)(Math.log10(s.length) / Math.log10(2));
             this.layers = (Map<Integer, T>[])new Map[ log2 + 1 ];
         }
 
+        public T get(int iFrom, int iTo) {
+            if (iFrom > iTo) return null;
+
+            int iFromChunk = iFrom >> shift0;
+            int iToChunk   = iTo >> shift0;
+
+            if (iFromChunk == iToChunk) return calculatePartialChunk.apply(iFrom, iTo);
+
+            int iFromOffset = iFrom - (iFromChunk << shift0);
+            int iToOffset   = iTo   - (iToChunk << shift0);
+
+            T leftSolution;
+            T centerSolution; int iFromNext, iToNext;
+            T rightSolution;
+
+            if (iFromOffset == 0)
+                     { iFromNext = iFromChunk;     leftSolution = null;}
+                else { iFromNext = iFromChunk + 1; leftSolution = calculatePartialChunk.apply(iFrom, (iFromNext << shift0)-1 ); }
+
+            if (iToOffset == chunkMaxOffset)
+                     { iToNext = iToChunk;     rightSolution = null; }
+                else { iToNext = iToChunk - 1; rightSolution = calculatePartialChunk.apply( iToChunk << shift0, iTo ); }
+
+            centerSolution = get(1, iFromNext, iToNext);
+
+            T leftAndCenter = doMerge(leftSolution, centerSolution);
+            T solution  = doMerge(leftAndCenter, rightSolution);
+
+            return solution;
+        }
 
         private T get(int layer, int iFrom, int iTo) {
             if (iFrom > iTo) return null;
@@ -75,9 +113,9 @@ public class MaxCountPalidromes {
             centerSolution = get (layer + 1, iFromNext, iToNext);
 
             T leftAndCenter = doMerge(leftSolution, centerSolution);
-            T soltion  = doMerge(leftAndCenter, rightSolution);
+            T solution  = doMerge(leftAndCenter, rightSolution);
 
-            return soltion;
+            return solution;
         }
 
         private T pull(final int layer, int iFrom) {
@@ -87,12 +125,14 @@ public class MaxCountPalidromes {
 
             return layers[layer]
                     .computeIfAbsent(iFrom, i -> {
-                        if (layer > 0) {
+                        if (layer > 1) {
                             int prevLayer = layer - 1;
                             int prevLayerIndex = i << 1;
-                            return doMerge(pull(prevLayer, prevLayerIndex), pull(prevLayer, prevLayerIndex + 1) );
+                            return doMerge(pull(prevLayer, prevLayerIndex), pull(prevLayer, prevLayerIndex + 1));
+                        } else if (layer == 1) {
+                            return calculateChunk.apply(shift0, i);
                         } else {
-                            return calculate.apply(i);
+                            throw new RuntimeException("This is impossible!!! :-)");
                         }
                     });
 
@@ -115,10 +155,22 @@ public class MaxCountPalidromes {
     // Complete the initialize function below.
     private static void initialize(String s) {
         MaxCountPalidromes.s = s.toCharArray();
-        lettersFrequencyAggregator = new BinaryTaskAggregator<>(
-                i -> {
+        lettersFrequencyAggregator = new BinaryTaskAggregator<Map<Character, Integer>>(
+                (byte)4,
+                (iFrom, iTo) -> {
                     Map<Character, Integer> ch = new HashMap<>(1);
-                    ch.put(MaxCountPalidromes.s[i], 1);
+                    for (int i = iFrom; i <= iTo; i++) {
+                        ch.merge(MaxCountPalidromes.s[i], 1, (a, b) -> a + b);
+                    }
+                    return ch;
+
+                },
+                (shift0, chunkNumber) -> {
+                    Map<Character, Integer> ch = new HashMap<>(1);
+                    int iTo = ((chunkNumber+1) << shift0) - 1;
+                    for (int i = chunkNumber << shift0; i <= iTo; i++) {
+                        ch.merge(MaxCountPalidromes.s[i], 1, (a, b) -> a + b);
+                    }
                     return ch;
                 },
                 (l, r) -> {
@@ -136,17 +188,10 @@ public class MaxCountPalidromes {
         );
     }
 
-    // Complete the answerQuery fu nction below.
+    // Complete the answerQuery function below.
     private static int answerQuery(final int l, final int r) {
-/*
-        Map<Character, Integer> letters = new HashMap<>();
 
-        for ( int i=l-1; i < r; i++ ) {
-            letters.merge(s[i], 1, (prev, add) -> prev + add );
-        }
-*/
-        Map<Character, Integer> letters = lettersFrequencyAggregator.get(0, l-1, r-1);
-
+        Map<Character, Integer> letters = lettersFrequencyAggregator.get(l-1, r-1);
 
         if (letters.size() == 1) return 1;
 
@@ -233,6 +278,8 @@ public class MaxCountPalidromes {
             initialize(input.next());
 
             input.next(); // skip the 2nd line
+
+            //for (int i = 0; i < 287; i++) {input.next(); output.next(); }
 
             while (input.hasNext()) {
                 try {
