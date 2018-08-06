@@ -9,8 +9,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.function.BiFunction;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 /**
  * Created by grigory@clearscale.net on 8/4/2018.
@@ -46,15 +46,17 @@ public class MaxCountPalidromes {
 
     private static class BinaryTaskAggregator<T> {
 
-        private Function<T, T> merge;
         private Function<Integer, T> calculate;
+        private BiFunction<T, T, T> merge;
+        private Map<Integer, T>[] layers;
 
-        public BinaryTaskAggregator(Function<T, T> merge, Supplier<T> calculate) {
-            this.merge = merge;
+        public BinaryTaskAggregator(Function<Integer, T> calculate, BiFunction<T, T, T> merge) {
             this.calculate = calculate;
+            this.merge = merge;
+            int log2 = (int)(Math.log10(s.length) / Math.log10(2));
+            this.layers = (Map<Integer, T>[])new Map[ log2 + 1 ];
         }
 
-        private List<Map<Integer, T>> layers = new ArrayList<>();
 
         private T get(int layer, int iFrom, int iTo) {
             if (iFrom > iTo) return null;
@@ -64,45 +66,87 @@ public class MaxCountPalidromes {
             T centerSolution; int iFromNext, iToNext;
             T rightSolution;
 
-            if (iFrom % 2 == 0) { iFromNext = iFrom / 2;      leftSolution = null;               }
-                           else { iFromNext = iFrom / 2 + 1;  leftSolution = pull(layer, iFrom); }
+            if (iFrom % 2 == 0) { iFromNext =  iFrom >> 1;       leftSolution = null;               }
+                           else { iFromNext = (iFrom >> 1) + 1;  leftSolution = pull(layer, iFrom); }
 
-            if (iTo % 2 == 0) { iToNext = iTo / 2 - 1; rightSolution = pull(layer, iTo); }
-                         else { iToNext = iTo / 2;     rightSolution = null;             }
+            if (iTo % 2 == 0) { iToNext = (iTo >> 1) - 1; rightSolution = pull(layer, iTo); }
+                         else { iToNext =  iTo >> 1;      rightSolution = null;             }
 
             centerSolution = get (layer + 1, iFromNext, iToNext);
 
             T leftAndCenter = doMerge(leftSolution, centerSolution);
-            T soltion  = doMerge(leftSolution, centerSolution);
+            T soltion  = doMerge(leftAndCenter, rightSolution);
+
+            return soltion;
         }
 
-        private T pull(int layer, int iFrom) {
-            if (layer == layers.size()) {
-                layers.add(new HashMap<>());
+        private T pull(final int layer, int iFrom) {
+            if (layers[layer] == null) {
+                layers[layer] = new HashMap<>();
             }
 
-            return layers
-                    .get(layer)
-                    .computeIfAbsent(iFrom, calculate);
+            return layers[layer]
+                    .computeIfAbsent(iFrom, i -> {
+                        if (layer > 0) {
+                            int prevLayer = layer - 1;
+                            int prevLayerIndex = i << 1;
+                            return doMerge(pull(prevLayer, prevLayerIndex), pull(prevLayer, prevLayerIndex + 1) );
+                        } else {
+                            return calculate.apply(i);
+                        }
+                    });
 
+        }
+
+        private T doMerge(T left, T right) {
+            if (left == null && right == null) return null;
+            if (left == null)                  return right;
+            if (right == null)                 return left;
+
+            return merge.apply(left, right);
         }
 
     }
+
+
+    static BinaryTaskAggregator<Map<Character, Integer>> lettersFrequencyAggregator;
 
 
     // Complete the initialize function below.
     private static void initialize(String s) {
         MaxCountPalidromes.s = s.toCharArray();
+        lettersFrequencyAggregator = new BinaryTaskAggregator<>(
+                i -> {
+                    Map<Character, Integer> ch = new HashMap<>(1);
+                    ch.put(MaxCountPalidromes.s[i], 1);
+                    return ch;
+                },
+                (l, r) -> {
+                    Map<Character, Integer> max, min;
+                    if (l.size() > r.size()) { max = l; min = r; }
+                    else { max = r; min = l; }
 
+                    Map<Character, Integer> m = new HashMap<>(max);
+                    for (Map.Entry<Character, Integer> e : min.entrySet()){
+                        m.merge( e.getKey(), e.getValue(), (a,b) -> a + b );
+                    }
+                    return m;
+                }
+
+        );
     }
 
     // Complete the answerQuery fu nction below.
     private static int answerQuery(final int l, final int r) {
+/*
         Map<Character, Integer> letters = new HashMap<>();
 
         for ( int i=l-1; i < r; i++ ) {
             letters.merge(s[i], 1, (prev, add) -> prev + add );
         }
+*/
+        Map<Character, Integer> letters = lettersFrequencyAggregator.get(0, l-1, r-1);
+
 
         if (letters.size() == 1) return 1;
 
