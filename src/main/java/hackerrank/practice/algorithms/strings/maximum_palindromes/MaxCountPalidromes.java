@@ -17,8 +17,8 @@ import java.util.function.BiFunction;
 public class MaxCountPalidromes {
 
     private static char[] s;
-    private static Map<Pair, BigInteger> C_Caash = new HashMap<>();
-    private static Map<Pair, BigInteger> Mult_Chash = new HashMap<>();
+    private static Map<Pair, BigInteger> C_Cash = new HashMap<>();
+    private static Map<Pair, BigInteger> Malt_Cash = new HashMap<>();
     private static class Pair {
         final int f;
         final int s;
@@ -236,7 +236,7 @@ public class MaxCountPalidromes {
     private static BigInteger C(final int n, final int k) {
         if (n == k) return BigInteger.ONE;
 
-        return C_Caash.computeIfAbsent( new Pair(n, k), p -> {
+        return C_Cash.computeIfAbsent( new Pair(n, k), p -> {
             BigInteger division = Mult(n-k, n);
             BigInteger devider = Mult(1, k);
             return division.divide( devider );
@@ -245,7 +245,7 @@ public class MaxCountPalidromes {
     }
 
     private static BigInteger Mult(final int from, final int to) {
-        return Mult_Chash.computeIfAbsent( new Pair(from, to), p -> {
+        return Malt_Cash.computeIfAbsent( new Pair(from, to), p -> {
             int current = from;
             BigInteger res = BigInteger.valueOf(current);
             while (current < to) {
@@ -269,7 +269,17 @@ public class MaxCountPalidromes {
         @Test public void t8() { Assert.assertEquals(4, getMax("aabbcd")); }
 
         @Test public void tH2() throws IOException  { testByIncomeFile(2); }
-        @Test public void tH28() throws IOException  { testByIncomeFile(28); }
+        @Test public void tH28() throws IOException  {
+            for (int n = 0; n<10; n++) {
+                long start = System.nanoTime();
+                for (int i = 0; i < 10; i++) testByIncomeFile(28);
+                long finish = System.nanoTime();
+
+                double seconds = (double) (finish - start) / 1000000000.0;
+                print(String.format("%.2f", seconds));
+            }
+
+        }
 
 
         public void testByIncomeFile(int id) throws IOException {
@@ -277,9 +287,10 @@ public class MaxCountPalidromes {
             Iterator<String> output = Files.readAllLines( getFileForTest("tH" + id + "-output.txt") ).iterator();
             initialize(input.next());
 
-            input.next(); // skip the 2nd line
+            C_Cash = new HashMap<>();
+            Malt_Cash = new HashMap<>();
 
-            //for (int i = 0; i < 287; i++) {input.next(); output.next(); }
+            input.next(); // skip the 2nd line
 
             while (input.hasNext()) {
                 try {
@@ -288,19 +299,20 @@ public class MaxCountPalidromes {
                             .toArray();
                     int out = Integer.parseInt(output.next());
 
-                    System.out.print("C:[" + C_Caash.size() + "] [M:" + Mult_Chash.size() + "] " +
+/*
+                    System.out.print("C:[" + C_Cash.size() + "] [M:" + Malt_Cash.size() + "] " +
                             "|" + in[0] + " " + in[1] + " -> (" + out + ") -> ");
+*/
                     int r = answerQuery(in[0], in[1]);
-                    System.out.print(r);
+//                    System.out.print(r);
 
                     Assert.assertEquals(out, r);
                 } finally {
-                    System.out.println();
+//                    System.out.println();
                 }
 
             }
         }
-
 
         private Path getFileForTest(String sufix) {
             return Paths.get("src/main/java/" + MaxCountPalidromes.class.getName().replace(".", "/") + "-" + sufix);
