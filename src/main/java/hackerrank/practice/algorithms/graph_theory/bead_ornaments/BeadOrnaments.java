@@ -34,8 +34,13 @@ public class BeadOrnaments {
         long[] v = new long[n+1];
         v[0] = 1;
         v[1] = 1;
-        for (int i = 2; i <= n; i++) {
-            v[i] = (v[i-1] * (2*i - 3)) % MOD;
+        v[2] = 1;
+        for (int i = 3; i <= n; i++) {
+            v[i] = i;
+            for (int j = 2; j <= i - 2; j++) {
+                v[i] = (v[i] * j) % MOD;
+            }
+
         }
         return v;
     }
