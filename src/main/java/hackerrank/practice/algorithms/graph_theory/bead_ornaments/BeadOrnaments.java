@@ -13,14 +13,15 @@ public class BeadOrnaments {
     static final int MAX_N = 10; // max number fof colors (sub-graphs with nodes of the same color)
     static final int MAX_B = 30; //max number of nodes in each color graph
 
-    static long[] factorial;
+    //static long[] factorial;
     static long[] variants;
 
     static {
-        factorial = buildFactorialsTable(MAX_B);
+        //factorial = buildFactorialsTable(MAX_B);
         variants = buildGraphVariantsTable(MAX_N);
     }
 
+/*
     private static long[] buildFactorialsTable(int n) {
         long[] f = new long[n+1];
         f[0] = 1;
@@ -29,6 +30,7 @@ public class BeadOrnaments {
         }
         return f;
     }
+*/
 
     private static long[] buildGraphVariantsTable(int n) {
         long[] v = new long[n+1];
@@ -38,19 +40,20 @@ public class BeadOrnaments {
         for (int i = 3; i <= n; i++) {
             v[i] = i;
             for (int j = 2; j <= i - 2; j++) {
-                v[i] = (v[i] * j) % MOD;
+                v[i] = (v[i] * i) % MOD;
             }
-
         }
         return v;
     }
 
     static long beadOrnaments(int[] b) {
-        long R = variants[ b.length ];
+        if (b.length == 1) return variants[ b[1] ];
+        long R = 1;
+
 
         for (int i = 0; i < b.length; i++) {
             long V = variants[ b[i] ];
-            R = (R * V) % MOD;
+            R = (((R * V) % MOD) * b[i]) % MOD;
         }
 
         return R;
