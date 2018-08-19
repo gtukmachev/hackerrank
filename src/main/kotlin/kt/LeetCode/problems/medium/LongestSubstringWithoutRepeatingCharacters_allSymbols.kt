@@ -62,12 +62,14 @@ class Tests_allSymbols() {
     @Test fun t4() { assertThat(s.lengthOfLongestSubstring("abab"), `is`(2)) }
     @Test fun t5() { assertThat(s.lengthOfLongestSubstring("acbab"), `is`(3)) }
 
-    @Test fun leet1() { assertThat(s.lengthOfLongestSubstring("abcabcbb"), `is`(3)) }
-
     @Test fun sr1() {assertThat( s.lengthOfLongestSubstring("aaaaaaaaa"), `is`(1) )}
 
     @Test fun st1() {assertThat( s.lengthOfLongestSubstring("a".repeat(1_000_000)), `is`(1) )}
     @Test fun st2() {assertThat( s.lengthOfLongestSubstring(sForSt2), `is`(4) )}
     @Test fun st3() {assertThat( s.lengthOfLongestSubstring(sForSt3), `is`('Z' - 'A' + 1) )}
+
+    @Test fun leet1() { assertThat(s.lengthOfLongestSubstring("abcabcbb"), `is`(3)) }
+    @Test fun leet2() { assertThat(s.lengthOfLongestSubstring("   "), `is`(1)) }
+
 
 }
