@@ -10,7 +10,7 @@ import static org.junit.Assert.*;
  */
 public class Tests {
 
-    SymmetricTree_via_BreathTraversing.Solution s = new SymmetricTree_via_BreathTraversing().new Solution();
+    SymmetricTree_via_recursion.Solution s = new SymmetricTree_via_recursion().new Solution();
 
     @Test
     public void tt0() {
