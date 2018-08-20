@@ -19,27 +19,33 @@ class Solution {
         if (L == 0) return 0;
         if (L == 1) return 1;
 
-        val map = HashMap<Char, Int>()
+        val map = mutableMapOf<Char, Int>()
         var currMax = 0;
         var currLen = 0;
 
+        //aabccaabcdc
         for (i in 0 until L) {
             val ch = s[i]
-
-            map.computeIfPresent(ch){ _, lastPos ->
-                currLen = i - lastPos
+            val prevPos = map[ch]
+            if (prevPos != null) {
+                val iterator = map.iterator()
+                while(iterator.hasNext()){
+                    val entry = iterator.next()
+                    if (entry.value < prevPos) {
+                        iterator.remove()
+                    }
+                }
                 if (currLen > currMax) currMax = currLen
-                currLen = - 1
-                i
+                currLen = i - prevPos - 1
             }
-
+            map[ch] = i
             currLen += 1;
-            map.put(ch, i)
         }
 
         return if (currMax > currLen) currMax else currLen
     }
 }
+
 }
 
 
@@ -62,6 +68,11 @@ class Tests_allSymbols() {
     @Test fun t4() { assertThat(s.lengthOfLongestSubstring("abab"), `is`(2)) }
     @Test fun t5() { assertThat(s.lengthOfLongestSubstring("acbab"), `is`(3)) }
 
+    @Test fun t6() { assertThat(s.lengthOfLongestSubstring("abbb"), `is`(2)) }
+    @Test fun t7() { assertThat(s.lengthOfLongestSubstring("abcc"), `is`(3)) }
+    @Test fun t8() { assertThat(s.lengthOfLongestSubstring("aabcc"), `is`(3)) }
+    @Test fun t9() { assertThat(s.lengthOfLongestSubstring("aabccaabcdc"), `is`(4)) }
+
     @Test fun sr1() {assertThat( s.lengthOfLongestSubstring("aaaaaaaaa"), `is`(1) )}
 
     @Test fun st1() {assertThat( s.lengthOfLongestSubstring("a".repeat(1_000_000)), `is`(1) )}
@@ -70,6 +81,8 @@ class Tests_allSymbols() {
 
     @Test fun leet1() { assertThat(s.lengthOfLongestSubstring("abcabcbb"), `is`(3)) }
     @Test fun leet2() { assertThat(s.lengthOfLongestSubstring("   "), `is`(1)) }
+    @Test fun leet3() { assertThat(s.lengthOfLongestSubstring("aab"), `is`(2)) }
+    @Test fun leet4() { assertThat(s.lengthOfLongestSubstring("abb"), `is`(2)) }
 
 
 }
