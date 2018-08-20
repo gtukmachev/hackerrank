@@ -1,4 +1,4 @@
-package kt.LeetCode.problems.medium
+package kt.LeetCode.problems.medium.longest_substring_without_repeating_characters
 
 import org.hamcrest.core.Is.`is`
 import org.junit.Assert.assertThat
