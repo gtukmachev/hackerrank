@@ -12,7 +12,7 @@ import static org.junit.Assert.assertThat;
  */
 public class Tests {
 
-    TrappingRainWater.Solution s = new TrappingRainWater().new Solution();
+    TrappingRainWater_faster.Solution s = new TrappingRainWater_faster().new Solution();
 
     /**
      *  {@see https://leetcode.com/problems/trapping-rain-water/description/}
