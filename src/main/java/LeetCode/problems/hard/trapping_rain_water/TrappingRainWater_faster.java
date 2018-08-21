@@ -1,7 +1,7 @@
 package LeetCode.problems.hard.trapping_rain_water;
 
 /**
- * Created by grigory@clearscale.net on 8/21/2018.
+ * Copied from LeetCode
  */
 public class TrappingRainWater_faster {
 
