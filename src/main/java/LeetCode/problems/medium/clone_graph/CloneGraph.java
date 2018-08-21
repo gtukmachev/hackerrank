@@ -10,25 +10,27 @@ public class CloneGraph implements CloneGraphI {
 
     @Override
     public UndirectedGraphNode cloneGraph(UndirectedGraphNode node) {
+        if (node == null) return null;
 
-        Map<Integer, UndirectedGraphNode> visited = new HashMap<>();
+        Map<UndirectedGraphNode, UndirectedGraphNode> nodes = new HashMap<>();
         UndirectedGraphNode newNode = new UndirectedGraphNode(node.label);
-        visited.put(node.label, newNode);
+        nodes.put(node, newNode);
 
-        cloneNeigbors(newNode, node, visited);
+        cloneNeigbors(newNode, node, nodes);
 
         return newNode;
     }
 
-    private void cloneNeigbors(UndirectedGraphNode newNode, UndirectedGraphNode node, Map<Integer, UndirectedGraphNode> clonned) {
+    private void cloneNeigbors(UndirectedGraphNode newNode, UndirectedGraphNode node, Map<UndirectedGraphNode, UndirectedGraphNode> nodes) {
+        for (UndirectedGraphNode child : node.neighbors) {
 
-        for (UndirectedGraphNode link : node.neighbors) {
-            boolean isNew = !clonned.containsKey(link.label);
-            UndirectedGraphNode newChild = clonned.computeIfAbsent( link.label, UndirectedGraphNode::new );
+            boolean isNew = !nodes.containsKey(child);
+
+            UndirectedGraphNode newChild = nodes.computeIfAbsent( child, l -> new UndirectedGraphNode(l.label) );
             newNode.neighbors.add( newChild );
-            if (isNew) cloneNeigbors(newChild, link, clonned);
-        }
 
+            if (isNew) cloneNeigbors(newChild, child, nodes);
+        }
     }
 
 
