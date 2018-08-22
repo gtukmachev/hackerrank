@@ -27,22 +27,21 @@ package LeetCode.problems.medium.is_subsequence;
  */
 public class IsSubsequence {
 
-    public boolean isSubsequence(String s, String t) {
-        if (t == null) return false;
-        if (s == null || s.length() == 0) return true;
+    public boolean isSubsequence(String small, String big) {
+        if (big == null) return false;
+        if (small == null || small.length() == 0) return true;
 
-        int p = 0;
-        char ch = s.charAt(p);
-        int M = s.length();
-        int L = t.length();
+        int   p = 0;
+        char ch = small.charAt(p);
 
+        int smallLen = small.length();
+        int   bigLen = big.length();
 
-        for (int i = 0; i < L && p <= M; i++)
-            if (t.charAt(i) == ch) {
-                p++;
-                if (p < M) ch = s.charAt(p);
+        for (int i = 0; i < bigLen && p <= smallLen; i++)
+            if (big.charAt(i) == ch) {
+                p++; ch = (p < smallLen) ? small.charAt(p) : 0;
             }
 
-        return p == M;
+        return p == smallLen;
     }
 }
