@@ -37,7 +37,7 @@ public class IsSubsequence {
         int smallLen = small.length();
         int   bigLen = big.length();
 
-        for (int i = 0; i < bigLen && p <= smallLen; i++)
+        for (int i = 0; i < bigLen && p < smallLen; i++)
             if (big.charAt(i) == ch) {
                 p++; ch = (p < smallLen) ? small.charAt(p) : 0;
             }
