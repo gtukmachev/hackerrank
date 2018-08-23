@@ -7,15 +7,15 @@ import org.jetbrains.annotations.NotNull;
  */
 public class MergeSortedLists {
 
-    private static final class ListWraper implements Comparable<ListWraper> {
+    private static final class ListWrapper implements Comparable<ListWrapper> {
         ListNode head;
 
-        public ListWraper(ListNode head) {
+        public ListWrapper(ListNode head) {
             this.head = head;
         }
 
         @Override
-        public int compareTo(@NotNull ListWraper o) {
+        public int compareTo(@NotNull ListWrapper o) {
             return head.val - o.head.val;
         }
     }
@@ -93,17 +93,17 @@ public class MergeSortedLists {
     public ListNode mergeKLists(ListNode[] lists) {
         if (lists == null || lists.length == 0) return null;
 
-        MinHeap<ListWraper> minHeap = new MinHeap<>(lists.length);
+        MinHeap<ListWrapper> minHeap = new MinHeap<>(lists.length);
         for (int i = 0; i < lists.length; i++)
             if (lists[i] != null)
-                minHeap.push(new ListWraper(lists[i]));
+                minHeap.push(new ListWrapper(lists[i]));
 
         ListNode head = new ListNode(-1);
         ListNode last = head;
 
 
         while (minHeap.size() > 1) {
-            ListWraper lw = minHeap.pull();
+            ListWrapper lw = minHeap.pull();
 
             last.next = new ListNode(lw.head.val);
             last = last.next;

@@ -132,11 +132,22 @@ public class Tests {
 
     }
 
+
+    @Test public void td1() {assertThat( s.mergeKLists( new ListNode[]{
+            listOf(1,2,3),
+            listOf(1,2,3,4,5,6,7,8,9),
+            listOf(5,5)} ),
+
+            is(listOf(1,1,2,2,3,3,4,5,5,5,6,7,8,9)));
+    }
+
+
     @Test public void tn1() {assertThat( s.mergeKLists( new ListNode[]{} ), is(listOf())); }
     @Test public void tn2() {assertThat( s.mergeKLists( null             ), is(listOf())); }
-
     @Test public void tn3() {assertThat( s.mergeKLists( new ListNode[]{listOf( )}), is(listOf( )) );}
     @Test public void tn4() {assertThat( s.mergeKLists( new ListNode[]{listOf(1)}), is(listOf(1)) );}
+    @Test public void tn5() {assertThat( s.mergeKLists( new ListNode[]{listOf(1,2,3), null}), is(listOf(1,2,3)) );}
+    @Test public void tn6() {assertThat( s.mergeKLists( new ListNode[]{listOf(1,2,3), null, listOf(1,2,3)}), is(listOf(1,1,2,2,3,3)) );}
 
     @Test public void t1() {
         assertThat(
