@@ -13,8 +13,10 @@ public class LargestRectangleInHistogram {
 
         ArrayList<Integer> rectStarts = new ArrayList<>(heights.length / 16);
         ArrayList<Integer> rectHeights = new ArrayList<>(heights.length / 16);
+        ArrayList<Integer> rectEnds = new ArrayList<>(heights.length / 16);
         rectHeights.add(heights[0]);
         rectStarts.add(0);
+        rectEnds.add(0);
         int max = 0;
 
         int h;
@@ -26,24 +28,37 @@ public class LargestRectangleInHistogram {
             if ( h > prev) {
                 rectHeights.add(heights[i]);
                 rectStarts.add(i);
+                rectEnds.add(i);
+
+            } else if (h == prev) {
+                rectEnds.set(rectEnds.size()-1, i) ;
 
             } else if (h < prev) {
 
-                int rHeight = h;
-                int rStartedAt;
                 int index = rectHeights.size() - 1;
+                int rHeight;
+                int rStartedAt = rectStarts.get(0);
+                int rInitialEnd = rectEnds.get(0);
 
                 while (index >= 0 && rectHeights.get(index) > h ) {
-                    rHeight = rectHeights.remove(index);
-                    rStartedAt = rectStarts.remove(index);
+                    rHeight     = rectHeights.remove(index);
+                    rStartedAt  = rectStarts.remove(index);
+                    rInitialEnd = rectEnds.remove(index);
                     index--;
 
                     max = maxRect(max, rHeight, rStartedAt, i);
                 }
 
-                if (rHeight < h || index == -1) {
+                if (index == -1) {
                     rectHeights.add(h);
-                    rectStarts.add(i);
+                    rectStarts.add(rStartedAt);
+                    rectEnds.add(i);
+                } else if ( rectHeights.get(index) < h) {
+                    rectHeights.add(h);
+                    rectStarts.add(rectEnds.get(index)+1);
+                    rectEnds.add(i);
+                } else if ( rectHeights.get(index) == h) {
+                    rectEnds.set(index, i);
                 }
 
             }
