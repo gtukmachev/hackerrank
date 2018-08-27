@@ -130,7 +130,18 @@ class Tests {
                 , `is`(14)
         )
     }
-    
+
+    @Test fun t4_7__14b() {
+        assertThat(
+                s.maximalRectangle(
+                        rectOf("""1 1 1 1 1 1 1
+                                 |1 1 1 1 1 1 1
+                                 |1 1 1 1 0 0 0
+                                 |1 1 0 0 0 0 0""".trimMargin() ))
+                , `is`(14)
+        )
+    }
+
     
     @Test fun t_leet() {
         assertThat(
@@ -153,7 +164,6 @@ class Tests {
                                  |3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 0 1
                                  |1 1 1 1 1 1 1 1 0 1 1 0 1 1 0 1 1 1 1
                                  |1 1 1 1 1 1 0 1 1 1 1 1 1 1 1 0 1 1 1""".trimMargin())
-
                 //                0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8
                 )
                 , `is`(51)

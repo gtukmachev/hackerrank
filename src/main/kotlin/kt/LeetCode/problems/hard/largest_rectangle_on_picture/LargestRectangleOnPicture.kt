@@ -17,7 +17,7 @@ class LargestRectangleOnPicture {
 
 
         for (c in 0 until C) {
-            println("--- $c ------------------------------------------------------------")
+            //println("--- $c ------------------------------------------------------------")
             val bigSqr = Rect(0,c, lastL, c-1) // fake rectangle
 
             for (l in 0 until L) {
@@ -31,6 +31,8 @@ class LargestRectangleOnPicture {
             for(sqr in bigSqr.evaluate()) sqrIndex.addSqrToIndex(sqr)
 
             bigSqr.clear()
+
+            //sqrIndex.forEach{println(". $it : ${it.S()}")}
         }
 
         sqrIndex.evaluateMaxS()
@@ -42,13 +44,11 @@ class LargestRectangleOnPicture {
 
     /**
      * Rectatngle
-     *    +--------+
-     *    |ps      |
-     *    |      pe|
-     *    +--------+
-     *
-     * @field ps - start of the rectangle inclusive
-     * @field pe - end of the rectangle inclusive
+     *    +------------+
+     *    |ls,cs       |
+     *    |            |
+     *    |       le,ce|
+     *    +------------+
      */
     data class Rect(val ls: Int, val cs: Int, var le: Int, var ce: Int) {
 
@@ -97,8 +97,9 @@ class LargestRectangleOnPicture {
 
         fun addSqrToIndex(rect: Rect) {
             if (index[rect.ls].keys.any{
+                        it.cs <= rect.cs &&
                         it.ls <= rect.ls &&
-                                it.le >= rect.le
+                        it.le >= rect.le
                     }
             ) return // skip it, if another one present, which covers this one
 
@@ -113,7 +114,7 @@ class LargestRectangleOnPicture {
 
             val s = rect.S()
             if (s > maxS) maxS = s
-            println("- $rect : $s")
+            //println("- $rect : $s")
         }
 
         fun forEach(f: (Rect) -> Unit){
@@ -148,7 +149,7 @@ class LargestRectangleOnPicture {
         fun evaluateMaxS() {
             forEach {
                 val s = it.S()
-                println("+ $it : $s")
+                //println("+ $it : $s")
                 if (s > maxS) maxS = s
             }
         }
