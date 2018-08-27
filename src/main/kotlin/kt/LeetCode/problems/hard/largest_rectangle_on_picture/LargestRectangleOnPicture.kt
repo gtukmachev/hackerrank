@@ -1,5 +1,7 @@
 package kt.LeetCode.problems.hard.largest_rectangle_on_picture
 
+import java.util.*
+
 /**
  * Created by grigory@clearscale.net on 8/25/2018.
  */
@@ -15,6 +17,7 @@ class LargestRectangleOnPicture {
 
 
         for (c in 0 until C) {
+            println("--- $c ------------------------------------------------------------")
             val bigSqr = Rect(0,c, lastL, c-1) // fake rectangle
 
             for (l in 0 until L) {
@@ -49,8 +52,6 @@ class LargestRectangleOnPicture {
      */
     data class Rect(val ls: Int, val cs: Int, var le: Int, var ce: Int) {
 
-        var id: Int = -1
-        
         val lines: MutableList<Rect> = mutableListOf() //t: review real class of it
         var lastLine: Rect? = null
         fun S() = (le - ls + 1) * (ce - cs + 1)
@@ -87,35 +88,32 @@ class LargestRectangleOnPicture {
 
     class RectsIndex(val lines: Int){
         
-        var rectsId = 0;
         var maxS: Int = 0
-        val index: Array<MutableMap<Int, Rect>> = Array(lines){ _ -> HashMap<Int, Rect>() }
+        val index: Array<MutableMap<Rect, Rect>> = Array(lines){ _ -> IdentityHashMap<Rect, Rect>() }
 
         fun pushPointToAllNeeded(l: Int, c: Int, color: Char) {
-            index[l].values.forEach{ sqr -> sqr.pushPoint(l,c, color) }
+            index[l].keys.forEach{ it.pushPoint(l,c, color) }
         }
 
         fun addSqrToIndex(rect: Rect) {
-            if (index[rect.ls].values.any{
+            if (index[rect.ls].keys.any{
                         it.ls <= rect.ls &&
                                 it.le >= rect.le
                     }
             ) return // skip it, if another one present, which covers this one
 
-            rect.id = rectsId++;
             for (l in rect.ls .. rect.le)
-                index[l].put(rect.id, rect)
+                index[l].put(rect, rect)
         }
 
         fun remove(rect: Rect) {
             for (l in rect.ls .. rect.le) {
-                val removed = index[l].remove(rect.id)
-                if (removed == null) throw RuntimeException("!!!")
+                index[l].remove(rect) ?: throw RuntimeException("!!!")
             }
 
             val s = rect.S()
             if (s > maxS) maxS = s
-            //println("- $rect : $s")
+            println("- $rect : $s")
         }
 
         fun forEach(f: (Rect) -> Unit){
@@ -150,7 +148,7 @@ class LargestRectangleOnPicture {
         fun evaluateMaxS() {
             forEach {
                 val s = it.S()
-                //println("+ $it : $s")
+                println("+ $it : $s")
                 if (s > maxS) maxS = s
             }
         }
