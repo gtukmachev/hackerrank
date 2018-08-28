@@ -1,7 +1,5 @@
 package LeetCode.problems.medium.compare_version_numbers;
 
-import java.util.Iterator;
-
 /**
  * Created by grigory@clearscale.net on 8/28/2018.
  */
@@ -10,67 +8,49 @@ public class CompareVersionNumbers {
     public class Solution {
 
         public int compareVersion(String version1, String version2) {
-            Iterator<String> v1Iterator = new VersionIterator(version1);
-            Iterator<String> v2Iterator = new VersionIterator(version2);
+            int l1 = 0, p1 = 0;
+            int l2 = 0, p2 = 0;
 
             for(;;){
-                String v1 = v1Iterator.next();
-                String v2 = v2Iterator.next();
+                p1 = next(version1, l1);
+                p2 = next(version2, l2);
 
-                if (v1 == null && v2 == null) return  0;
-                if (v1 != null && v2 == null) return  1;
-                if (v1 == null /*&& v2 != null*/) return -1;
 
-                int r = compare(v1, v2);
+                if (p1 == -1 && p2 == -1) return  0;
+                if (p1 != -1 && p2 == -1) return  1;
+                if (p1 == -1            ) return -1;
+
+                int r = compare(version1, p1, l1, version2, p2, l2);
                 if (r != 0) return r;
+
+                l1 = p1+1;
+                l2 = p2+1;
             }
 
         }
 
-        int compare(String v1, String v2) {
-            int l1 = v1.length() - 1;
-            int l2 = v2.length() - 1;
+        int next(String s, int p) {
+            if (p > s.length()) return -1;
+            int n = s.indexOf('.', p);
+            return n == -1 ? s.length() : n;
+        }
 
-            if (l1 > l2) return  1;
-            if (l1 < l2) return -1;
+        int compare(String v1, int p1, int last1, String v2, int p2, int last2) {
+            int len1 = p1 - last1;
+            int len2 = p2 - last2;
 
-            while (v1.charAt(l1) == v2.charAt(l1) && l1 > 0 ) l1--;
+            if (len1 > len2) return  1;
+            if (len1 < len2) return -1;
 
-            if (v1.charAt(l1) > v2.charAt(l1)) return  1;
-            if (v1.charAt(l1) < v2.charAt(l1)) return -1;
+            int i = last1;
+            while (i < p1 && v1.charAt(i) == v2.charAt(i)) i++;
+
+            if (i == p1) return 0;
+            if (v1.charAt(i) > v2.charAt(i)) return  1;
+            if (v1.charAt(i) < v2.charAt(i)) return -1;
             return 0;
         }
 
     }
-
-    public static class VersionIterator implements Iterator<String> {
-        String s;
-        int p = 0;
-
-        public VersionIterator(String s) { this.s = s; }
-
-        @Override
-        public boolean hasNext() {
-            return p >= 0;
-        }
-
-        @Override
-        public String next() {
-            if (p == -1) return null;
-            int n = s.indexOf('.', p);
-            String r;
-            if (n == -1) {
-                r = s.substring(p);
-                p = -1;
-            } else {
-                r = s.substring(p, n);
-                p = n+1;
-            }
-
-            return r;
-        }
-    }
-
-
 
 }
