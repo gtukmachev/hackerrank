@@ -8,8 +8,8 @@ public class CompareVersionNumbers {
     public class Solution {
 
         public int compareVersion(String version1, String version2) {
-            int l1 = 0, p1 = 0;
-            int l2 = 0, p2 = 0;
+            int p1 = 0, l1 = skipZeros(version1, p1);
+            int p2 = 0, l2 = skipZeros(version2, p2);
 
             for(;;){
                 p1 = next(version1, l1);
@@ -23,10 +23,16 @@ public class CompareVersionNumbers {
                 int r = compare(version1, p1, l1, version2, p2, l2);
                 if (r != 0) return r;
 
-                l1 = p1+1;
-                l2 = p2+1;
+                l1 = skipZeros(version1, p1+1);
+                l2 = skipZeros(version2, p2+1);;
             }
 
+        }
+
+        int skipZeros(String s, int p) {
+            int n = p;
+            while (n < s.length() && s.charAt(n) == '0') n++;
+            return n;
         }
 
         int next(String s, int p) {
@@ -42,12 +48,12 @@ public class CompareVersionNumbers {
             if (len1 > len2) return  1;
             if (len1 < len2) return -1;
 
-            int i = last1;
-            while (i < p1 && v1.charAt(i) == v2.charAt(i)) i++;
+            int i1 = last1, i2 = last2;
+            while (i1 < p1 && i2 < p2 && v1.charAt(i1) == v2.charAt(i2)) {i1++; i2++;}
 
-            if (i == p1) return 0;
-            if (v1.charAt(i) > v2.charAt(i)) return  1;
-            if (v1.charAt(i) < v2.charAt(i)) return -1;
+            if (i1 == p1) return 0;
+            if (v1.charAt(i1) > v2.charAt(i2)) return  1;
+            if (v1.charAt(i1) < v2.charAt(i2)) return -1;
             return 0;
         }
 
