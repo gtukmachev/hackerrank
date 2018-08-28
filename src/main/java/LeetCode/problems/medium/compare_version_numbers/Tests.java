@@ -14,7 +14,7 @@ public class Tests {
 
     @Test public void t_leet0(){ assertThat(s.compareVersion("01", "1"), is( 0)); }
 
-    @Test public void td1(){ assertThat(s.compareVersion("01.01.0001", "1.1.1"), is( 0)); }
+    @Test public void td1(){ assertThat(s.compareVersion("01.01.0001", "1.1.1"), is( 0));}
 
     @Test public void t0(){ assertThat(s.compareVersion("1", "1"), is( 0)); }
     @Test public void t1(){ assertThat(s.compareVersion("1", "0"), is( 1)); }
