@@ -16,9 +16,9 @@ public class CompareVersionNumbers {
                 p2 = next(version2, l2);
 
 
-                if (p1 == -1 && p2 == -1) return  0;
-                if (p1 != -1 && p2 == -1) return  1;
-                if (p1 == -1            ) return -1;
+                if (p1 == -1 && p2 == -1) return 0;
+                if (p1 != -1 && p2 == -1) return checkForZeroLeaf(version1, l1,  1);
+                if (p1 == -1            ) return checkForZeroLeaf(version2, l2, -1);
 
                 int r = compare(version1, p1, l1, version2, p2, l2);
                 if (r != 0) return r;
@@ -27,6 +27,17 @@ public class CompareVersionNumbers {
                 l2 = skipZeros(version2, p2+1);;
             }
 
+        }
+
+        int checkForZeroLeaf(String s, int from, int result) {
+            while (from < s.length()) {
+                char ch = s.charAt(from);
+                if (ch != '0' && ch != '.') {
+                    return result;
+                }
+                from++;
+            }
+            return 0;
         }
 
         int skipZeros(String s, int p) {
