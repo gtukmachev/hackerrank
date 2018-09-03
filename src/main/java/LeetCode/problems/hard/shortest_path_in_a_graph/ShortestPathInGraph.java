@@ -71,8 +71,8 @@ public class ShortestPathInGraph {
         Map<Integer, Set<Integer>> buildEdges(int[] graphFrom, int[] graphTo) {
             Map<Integer, Set<Integer>> edges = new HashMap<>(graphFrom.length * 2);
             for (int i = 0; i < graphFrom.length; i++ ) {
-                edges.computeIfAbsent(graphFrom[i], HashSet::new).add(graphTo[i]);
-                edges.computeIfAbsent(graphTo[i], HashSet::new).add(graphFrom[i]);
+                edges.computeIfAbsent(graphFrom[i]-1, HashSet::new).add(graphTo[i]-1);
+                edges.computeIfAbsent(graphTo[i]-1, HashSet::new).add(graphFrom[i]-1);
             }
             return edges;
         }

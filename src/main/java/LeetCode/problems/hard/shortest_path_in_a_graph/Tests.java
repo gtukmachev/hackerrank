@@ -20,27 +20,27 @@ public class Tests {
 
         Map<Integer, Set<Integer>> answer = new HashMap<>();
         Set<Integer> from1 = new HashSet<>();
-        from1.add(2);
-        answer.put(1, from1);
+        from1.add(1);
+        answer.put(0, from1);
 
         Set<Integer> from2 = new HashSet<>();
-        from2.add(1);
+        from2.add(0);
+        from2.add(2);
         from2.add(3);
-        from2.add(4);
-        answer.put(2, from2);
+        answer.put(1, from2);
 
         Set<Integer> from3 = new HashSet<>();
-        from3.add(2);
-        from3.add(5);
-        answer.put(3, from3);
+        from3.add(1);
+        from3.add(4);
+        answer.put(2, from3);
 
         Set<Integer> from4 = new HashSet<>();
-        from4.add(2);
-        answer.put(4, from4);
+        from4.add(1);
+        answer.put(3, from4);
 
         Set<Integer> from5 = new HashSet<>();
-        from5.add(3);
-        answer.put(5, from5);
+        from5.add(2);
+        answer.put(4, from5);
 
         assertThat(response, is(answer));
     }
@@ -61,6 +61,9 @@ public class Tests {
         assertThat(s.findShortest(0, new int[0], new int[0], new long[0], 0), is(-1));
     }
 
-    @Test public void t1_1() { assertThat(s.findShortest(5, new int[]{1,2,2,3}, new int[]{2,3,4,5}, new long[]{1,2,3,1,3}, 3), is(1)); }
-    @Test public void t1_2() { assertThat(s.findShortest(5, new int[]{1,2,2,3}, new int[]{2,3,4,5}, new long[]{1,2,3,1,3}, 1), is(2)); }
+    @Test public void t1_1() { assertThat(s.findShortest(5, new int[]{1,2,2,3}, new int[]{2,3,4,5}, new long[]{1,2,3,1,3}, 1), is( 2)); }
+    @Test public void t1_2() { assertThat(s.findShortest(5, new int[]{1,2,2,3}, new int[]{2,3,4,5}, new long[]{1,2,3,1,3}, 2), is(-1)); }
+    @Test public void t1_3() { assertThat(s.findShortest(5, new int[]{1,2,2,3}, new int[]{2,3,4,5}, new long[]{1,2,3,1,3}, 3), is( 1)); }
+    @Test public void t1_4() { assertThat(s.findShortest(5, new int[]{1,2,2,3}, new int[]{2,3,4,5}, new long[]{1,2,3,1,3}, 4), is(-1)); }
+    @Test public void t1_5() { assertThat(s.findShortest(5, new int[]{1,2,2,3}, new int[]{2,3,4,5}, new long[]{1,2,3,1,3}, 5), is(-1)); }
 }
