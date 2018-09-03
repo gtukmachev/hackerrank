@@ -6,6 +6,7 @@ package LeetCode.problems.medium.jump_game
 object JumpGame {
 
     class Solution {
+
         fun canJump(nums: IntArray): Boolean {
 
             fun reachable(p: Int): Boolean{
@@ -26,9 +27,6 @@ object JumpGame {
 
             return nums.isEmpty() || reachable(nums.size-1)
         }
-
-
-
 
     }
 
