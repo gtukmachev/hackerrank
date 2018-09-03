@@ -22,37 +22,31 @@ public class ShortestPathInGraph {
             if (graphNodes < 2 ) return -1;
             if (graphFrom == null || graphFrom.length == 0) return -1;
             if (graphTo.length != graphFrom.length) throw new RuntimeException("Bad parameters: the graph defined bad - number of 'out' in 'in' nodes in the edges deffinition are different.");
-
+            if (graphNodes != ids.length) throw new RuntimeException("Bad parameters: number of nodes than 'ids' array");
 
             // index edges
-            Map<Integer, Set<Integer>> edges = new HashMap<>(graphFrom.length * 2);
-            for (int i = 0; i < graphFrom.length; i++ ) {
-                edges.computeIfAbsent(graphFrom[i], HashSet::new).add(graphTo[i]);
-                edges.computeIfAbsent(graphTo[i], HashSet::new).add(graphFrom[i]);
-            }
+            Map<Integer, Set<Integer>> edges = buildEdges(graphFrom, graphTo);
 
             // initiate balloons
-            List<Balloon> balloons = new LinkedList<>();
-            for (int nodeId = 0; nodeId < graphNodes; nodeId++) {
-                if (ids[nodeId] == val) {
-                    // create a baloon
-                    balloons.add(new Balloon(nodeId, edges));
-                }
-            }
+            List<Balloon> balloons = createBalloons(ids, val, edges);
 
             if (balloons.size() < 2) return -1;
 
 
-
-            int minLen = Integer.MAX_VALUE;
-
             while (balloons.size() > 1) {
                 // grow all balloons to 1 point
-                for (Balloon b : balloons) { b.growTo1(); }
+                int minPath = 0;
+                for (Balloon b : balloons) {
+                    b.growTo1();
 
-                // check crossing
-                int solution = checkCrossing(balloons);
-                if (solution != 0) return solution;
+                    // check crossing
+                    int solution = checkCrossing(b, balloons);
+                    if (solution != 0) {
+                        if (minPath == 0 || solution < minPath) minPath = solution;
+                    };
+                }
+
+                if (minPath != 0) return minPath;
 
 
                 // remove balloons
@@ -63,31 +57,41 @@ public class ShortestPathInGraph {
             return -1;
         }
 
-        int checkCrossing(List<Balloon> balloons) {
-            Map<Integer, Set<Balloon>> crossingMap = new HashMap<>();
-            IntWrapper min = new IntWrapper(0);
+        List<Balloon> createBalloons(long[] ids, int val, Map<Integer, Set<Integer>> edges) {
+            List<Balloon> balloons = new LinkedList<>();
+            for (int nodeId = 0; nodeId < ids.length; nodeId++) {
+                if (ids[nodeId] == val) {
+                    // create a baloon
+                    balloons.add(new Balloon(nodeId, edges));
+                }
+            }
+            return balloons;
+        }
 
-            for (Balloon thisBaloon : balloons) {
-                for (int nodeId_ : thisBaloon.getQueue()) {
-                    crossingMap.compute( nodeId_, (integer, setOfBallons) -> {
-                        if (setOfBallons == null) setOfBallons = new HashSet<>();
+        Map<Integer, Set<Integer>> buildEdges(int[] graphFrom, int[] graphTo) {
+            Map<Integer, Set<Integer>> edges = new HashMap<>(graphFrom.length * 2);
+            for (int i = 0; i < graphFrom.length; i++ ) {
+                edges.computeIfAbsent(graphFrom[i], HashSet::new).add(graphTo[i]);
+                edges.computeIfAbsent(graphTo[i], HashSet::new).add(graphFrom[i]);
+            }
+            return edges;
+        }
 
-                        for (Balloon crossedBalloon : setOfBallons ) {
-                            int path = thisBaloon.deep + crossedBalloon.deep - 1;
-                            if (min.val == 0 || path <= min.val) min.val = path;
-                            if (path == 1) {
-                                // got it! stop algorith here
-                            }
+        int checkCrossing(Balloon target, List<Balloon> balloons) {
+            int minPath = 0;
+            for (Balloon b : balloons) {
+                if (target != b) {
+                    Set<Integer> nodes = b.getQueue();
+                    for (int nodeId : target.getQueue()) {
+                        if (nodes.contains(nodeId)) {
+                            int path = target.deep + b.deep;
+                            if (minPath == 0 || path < minPath) minPath = path;
                         }
-
-                        setOfBallons.add(thisBaloon);
-                        return setOfBallons;
-
-                    });
+                    }
                 }
             }
 
-            return min.val;
+            return minPath;
         }
 
 
@@ -115,9 +119,35 @@ public class ShortestPathInGraph {
         private Set<Integer> visited = new HashSet<>();
         Map<Integer, Set<Integer>> edges;
 
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            Balloon balloon = (Balloon) o;
+
+            if (deep != balloon.deep) return false;
+            if (queue1 != null ? !queue1.equals(balloon.queue1) : balloon.queue1 != null) return false;
+            if (queue2 != null ? !queue2.equals(balloon.queue2) : balloon.queue2 != null) return false;
+            if (visited != null ? !visited.equals(balloon.visited) : balloon.visited != null) return false;
+            return edges != null ? edges.equals(balloon.edges) : balloon.edges == null;
+        }
+
+        @Override
+        public int hashCode() {
+            int result = deep;
+            result = 31 * result + (queue1 != null ? queue1.hashCode() : 0);
+            result = 31 * result + (queue2 != null ? queue2.hashCode() : 0);
+            result = 31 * result + (visited != null ? visited.hashCode() : 0);
+            result = 31 * result + (edges != null ? edges.hashCode() : 0);
+            return result;
+        }
+
         Balloon(int nodeId, Map<Integer, Set<Integer>> edges) {
             this.edges = edges;
             getQueue().add(nodeId);
+
+
         }
 
         Set<Integer> getQueue(){
