@@ -16,7 +16,18 @@ public class ShortestPathInGraph {
      * 3. An edge exists between <name>From[i] to <name>To[i].
      *
      */
-    public class Solution {
+
+    static int findShortest(int graphNodes,
+                            int[] graphFrom,
+                            int[] graphTo,
+                            long[] ids,
+                            int val)
+    {
+        return new ShortestPathInGraph.Resolver().findShortest(graphNodes, graphFrom, graphTo, ids, val);
+    }
+
+
+    static class Resolver {
 
         int findShortest(int graphNodes, int[] graphFrom, int[] graphTo, long[] ids, int val) {
             if (graphNodes < 2 ) return -1;
@@ -40,14 +51,18 @@ public class ShortestPathInGraph {
                     b.growTo1();
 
                     // check crossing
-                    int solution = checkCrossing(b, balloons);
-                    if (solution != 0) {
-                        if (minPath == 0 || solution < minPath) minPath = solution;
-                    };
+                    Balloon touchedBalloon = checkCrossing(b, balloons);
+                    if (touchedBalloon != null) {
+                        int currentPath = touchedBalloon.deep + b.deep;
+                        if (touchedBalloon.deep < b.deep) {
+                            return currentPath;
+                        } else {
+                            if (minPath == 0 || currentPath < minPath) minPath = currentPath;
+                        }
+                    }
                 }
 
                 if (minPath != 0) return minPath;
-
 
                 // remove balloons
                 clearBaloons(balloons);
@@ -77,23 +92,30 @@ public class ShortestPathInGraph {
             return edges;
         }
 
-        int checkCrossing(Balloon target, List<Balloon> balloons) {
+        Balloon checkCrossing(Balloon target, List<Balloon> balloons) {
             int minPath = 0;
+            Balloon minBallon = null;
             for (Balloon b : balloons) {
                 if (target != b) {
                     Set<Integer> nodes = b.getQueue();
                     for (int nodeId : target.getQueue()) {
                         if (nodes.contains(nodeId)) {
                             int path = target.deep + b.deep;
-                            if (minPath == 0 || path < minPath) minPath = path;
+                            if (
+                                    (minBallon == null) ||
+                                    (path < minPath)    ||
+                                    (path == minPath && b.deep < minBallon.deep)
+                            ) {
+                                minPath = path;
+                                minBallon = b;
+                            }
                         }
                     }
                 }
             }
 
-            return minPath;
+            return minBallon;
         }
-
 
         void clearBaloons(List<Balloon> balloons) {
             Iterator<Balloon> baloonIterator = balloons.iterator();
@@ -103,14 +125,12 @@ public class ShortestPathInGraph {
             }
         }
 
-
     }
 
     static class IntWrapper{
         int val;
         IntWrapper(int val) { this.val = val; }
     }
-
 
     static class Balloon {
         private int deep = 0;

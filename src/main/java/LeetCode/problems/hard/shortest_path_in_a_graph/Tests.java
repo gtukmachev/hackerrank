@@ -12,7 +12,7 @@ import static org.junit.Assert.assertThat;
  */
 public class Tests {
 
-    ShortestPathInGraph.Solution s = new ShortestPathInGraph().new Solution();
+    ShortestPathInGraph.Resolver s = new ShortestPathInGraph.Resolver();
 
 
     @Test public void tt_buildEdges() {
