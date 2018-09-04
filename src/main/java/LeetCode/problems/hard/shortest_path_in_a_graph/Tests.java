@@ -2,6 +2,9 @@ package LeetCode.problems.hard.shortest_path_in_a_graph;
 
 import org.junit.Test;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 
 import static org.hamcrest.core.Is.is;
@@ -66,4 +69,48 @@ public class Tests {
     @Test public void t1_3() { assertThat(s.findShortest(5, new int[]{1,2,2,3}, new int[]{2,3,4,5}, new long[]{1,2,3,1,3}, 3), is( 1)); }
     @Test public void t1_4() { assertThat(s.findShortest(5, new int[]{1,2,2,3}, new int[]{2,3,4,5}, new long[]{1,2,3,1,3}, 4), is(-1)); }
     @Test public void t1_5() { assertThat(s.findShortest(5, new int[]{1,2,2,3}, new int[]{2,3,4,5}, new long[]{1,2,3,1,3}, 5), is(-1)); }
+
+    @Test public void t_hr_08(){ assertThat(fileTest("08"), is(-1)); }
+
+    private int fileTest(String testId) {
+        try {
+
+            Iterator<String> input = Files.readAllLines(getFileForTest("test-" + testId + "-input.txt")).iterator();
+
+            String[] graphNodesEdges = input.next().split(" ");
+            int graphNodes = Integer.parseInt(graphNodesEdges[0].trim());
+            int graphEdges = Integer.parseInt(graphNodesEdges[1].trim());
+
+            int[] graphFrom = new int[graphEdges];
+            int[] graphTo = new int[graphEdges];
+
+            for (int i = 0; i < graphEdges; i++) {
+                String[] graphFromTo = input.next().split(" ");
+                graphFrom[i] = Integer.parseInt(graphFromTo[0].trim());
+                graphTo[i] = Integer.parseInt(graphFromTo[1].trim());
+            }
+
+            long[] ids = new long[graphNodes];
+
+            String[] idsItems = input.next().split(" ");
+
+            for (int i = 0; i < graphNodes; i++) {
+                long idsItem = Long.parseLong(idsItems[i]);
+                ids[i] = idsItem;
+            }
+
+            int val = Integer.parseInt(input.next().trim());
+
+            return s.findShortest(graphNodes, graphFrom, graphTo, ids, val);
+
+        } catch (Throwable t) {
+            throw new RuntimeException(t);
+        }
+    }
+
+    private Path getFileForTest(String sufix) {
+        return Paths.get("src/main/java/" + ShortestPathInGraph.class.getName().replace(".", "/") + "-" + sufix);
+    }
+
+
 }
