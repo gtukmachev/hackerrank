@@ -90,10 +90,20 @@ public class Tests {
         List<ShortestPathInGraph.Resolver.Spider> sps = s.createSpiders(s.colors, 1);
         assertThat(sps.size(), is(2));
         assertThat(sps.get(0).queue.peek(), is(0));
+        assertThat(sps.get(0).spiderId, is(-2));
+
         assertThat(sps.get(1).queue.peek(), is(5));
+        assertThat(sps.get(1).spiderId, is(-3));
 
     }
 
+    @Test public void t_spider_grow1(){
+
+
+    }
+
+
+/*
     @Test public void t0()   { assertThat(s.findShortest(0, new int[0], new int[0], new long[0], 0), is(-1)); }
     @Test public void t1_1() { assertThat(s.findShortest(5, new int[]{1,2,2,3}, new int[]{2,3,4,5}, new long[]{1,2,3,1,3}, 1), is( 2)); }
     @Test public void t1_2() { assertThat(s.findShortest(5, new int[]{1,2,2,3}, new int[]{2,3,4,5}, new long[]{1,2,3,1,3}, 2), is(-1)); }
@@ -101,6 +111,7 @@ public class Tests {
     @Test public void t1_4() { assertThat(s.findShortest(5, new int[]{1,2,2,3}, new int[]{2,3,4,5}, new long[]{1,2,3,1,3}, 4), is(-1)); }
     @Test public void t1_5() { assertThat(s.findShortest(5, new int[]{1,2,2,3}, new int[]{2,3,4,5}, new long[]{1,2,3,1,3}, 5), is(-1)); }
     @Test public void t_hr_08(){ assertThat(fileTest("08"), is(-1)); }
+*/
 
     private int fileTest(String testId) {
         try {
