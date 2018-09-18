@@ -119,13 +119,13 @@ public class ShortestPathInGraph {
         int[] buildGraphIndex(int[][] graph, int graphNodesNumber) {
             int[] index = new int[graphNodesNumber];
             int L = graph.length - 1;
-            int j = 0;
-            index[j]=0;
-            for (int i = 1; i < L; i++) {
-                if (graph[i][0] != index[j]) {
-                    j++;
-                    while(j < graph[i][0]) index[j++] = -1;
-                    index[j] = i;
+            int nodeId = 0;
+            index[nodeId]=0;
+            for (int edgeId = 1; edgeId < L; edgeId++) {
+                if (graph[edgeId][0] != nodeId) {
+                    nodeId++;
+                    while(nodeId < graph[edgeId][0]) index[nodeId++] = -1;
+                    index[nodeId] = edgeId;
                 }
             }
             return index;
