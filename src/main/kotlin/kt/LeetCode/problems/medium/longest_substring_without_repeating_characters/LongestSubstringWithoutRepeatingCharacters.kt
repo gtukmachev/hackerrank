@@ -13,7 +13,7 @@ import java.lang.Math.max
 object LongestSubstringWithoutRepeatingCharacters {
 
     class Solution {
-        val CHARACTERS_NUMBER = 'z' - 'a' + 1;
+        val CHARACTERS_NUMBER = 'z' - 'a' + 1
         val ALL_BITS = 0.let {
             var M: Int = it
             for (i in 1..CHARACTERS_NUMBER) M = ( M shl 1 ) + 1
@@ -22,11 +22,11 @@ object LongestSubstringWithoutRepeatingCharacters {
 
         fun lengthOfLongestSubstring(s: String): Int {
             val L = s.length
-            if (L == 0) return 0;
-            if (L == 1) return 1;
+            if (L == 0) return 0
+            if (L == 1) return 1
 
             val sets = IntArray(L)
-            var maxLength = 0;
+            var maxLength = 0
             var start = 0
 
             for (i in 0 until L) {
@@ -40,7 +40,7 @@ object LongestSubstringWithoutRepeatingCharacters {
                     if (ns >= 0) { // skip excluded
                         ns = ns xor chMask
                         when{
-                            (ns and chMask) == 0 -> { maxLength = max(maxLength, bitsCount(ns) + 1); ns = -1 }  //excluding
+                            (ns and chMask) == 0 -> { maxLength = max(maxLength, bitsCount(ns) + 1); sets[p] = -1 }  //excluding
                                 (ns == ALL_BITS) -> return CHARACTERS_NUMBER
                                             else -> sets[p] = ns
                         }
@@ -58,7 +58,7 @@ object LongestSubstringWithoutRepeatingCharacters {
             return maxLength;
         }
 
-        fun bitsCount(v : Int): Int { // wotks for positive ints only
+        fun bitsCount(v : Int): Int { // works for positive ints only
             var n = 0;
             var rest = v;
             while (rest > 0) {
@@ -71,7 +71,7 @@ object LongestSubstringWithoutRepeatingCharacters {
 }
 
 
-class Tests() {
+class Tests {
 
     val s = LongestSubstringWithoutRepeatingCharacters.Solution()
 
