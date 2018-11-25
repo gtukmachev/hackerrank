@@ -59,7 +59,7 @@ public class ShortestReach {
     }
 
 
-    static class Tests {
+    static public class Tests {
 
         final static class P {
             final int f;

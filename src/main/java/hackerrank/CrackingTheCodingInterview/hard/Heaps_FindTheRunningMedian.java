@@ -15,7 +15,7 @@ public class Heaps_FindTheRunningMedian {
 
         // leftHeap.size should be equals to rightHeap.size or to (rightHeap.size + 1)
 
-        if (leftHeap.size == 0 || next <= lastMedian) { leftHeap.add(next); }
+        if (leftHeap.size == 0 || next <= lastMedian) { leftHeap.add(next);  }
         else                                          { rightHeap.add(next); }
 
         if      (rightHeap.size > leftHeap.size)        { leftHeap.add (rightHeap.removeRoot() ); }
