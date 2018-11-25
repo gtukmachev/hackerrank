@@ -62,7 +62,7 @@ class Tests {
 
     @Test
     fun t1() { genericTest(intArrayOf(0, 1, 2, 3, 0, 5, 6), 0,
-                           intArrayOf(1, 2, 3, 5, 6))
+                           intArrayOf(   1, 2, 3,    5, 6))
     }
 
     @Test
@@ -74,43 +74,43 @@ class Tests {
     @Test
     fun t3() {
         genericTest(intArrayOf(), 0,
-                intArrayOf())
+                    intArrayOf())
     }
 
     @Test
     fun t4() {
         genericTest(intArrayOf(), 1,
-                intArrayOf())
+                    intArrayOf())
     }
 
     @Test
     fun t5() {
         genericTest(intArrayOf(1, 1, 1), 1,
-                intArrayOf())
+                    intArrayOf())
     }
 
     @Test
     fun t6() {
         genericTest(intArrayOf(2), 2,
-                intArrayOf())
+                    intArrayOf())
     }
 
     @Test
     fun t7() {
         genericTest(intArrayOf(1), 0,
-                intArrayOf(1))
+                    intArrayOf(1))
     }
 
     @Test
     fun t8() {
         genericTest(intArrayOf(1, 2, 3), 0,
-                intArrayOf(1, 2, 3))
+                    intArrayOf(1, 2, 3))
     }
 
     @Test
     fun t9() {
         genericTest(intArrayOf(1, 2, 3, 8, 8, 8), 8,
-                intArrayOf(1, 2, 3))
+                    intArrayOf(1, 2, 3))
     }
 
     private fun genericTest(arr: IntArray, targetVal: Int, neededArbitraryArr: IntArray) {
