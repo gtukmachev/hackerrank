@@ -17,17 +17,14 @@ class RemoveElement {
         var moveMode = true
 
         for (i in 0 until nums.size) {
-            val isMAtched = nums[i] == target
+            val isMatched = nums[i] == target
+
             when(moveMode) {
-                true -> {
-                    if (isMAtched) {
+                true -> if (isMatched) {
                         moveMode = false
                         iStart = reorder(nums, target, iStart, i)
                     }
-                }
-                false -> {
-                    if (!isMAtched) moveMode = true
-                }
+                false -> if (!isMatched) moveMode = true
             }
         }
 
