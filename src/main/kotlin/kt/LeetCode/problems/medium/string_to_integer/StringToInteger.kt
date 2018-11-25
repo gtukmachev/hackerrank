@@ -25,11 +25,10 @@ object StringToInteger {
         val isMinus = str[i] == '-'
         if (isMinus || str[i] == '+') {
             i++
+            if (i == L) return 0
         }
-        if (i == L) return 0
 
         var num: Long = 0
-
 
         do {
             val ch = str[i]
@@ -37,11 +36,8 @@ object StringToInteger {
 
             num = num*10 + (ch - '0')
 
-            if (isMinus) {
-                if (num >= MIN) return Int.MIN_VALUE
-            } else {
-                if (num >= MAX) return Int.MAX_VALUE
-            }
+            if (isMinus) { if (num >= MIN) return Int.MIN_VALUE }
+                    else { if (num >= MAX) return Int.MAX_VALUE }
 
             i++
         } while (i < L)
@@ -54,6 +50,9 @@ object StringToInteger {
 
 
 class Tests {
+
+    @Test fun t() { assertThat( StringToInteger.myAtoi(""), `is`(0)) }
+    @Test fun t__() { assertThat( StringToInteger.myAtoi("   "), `is`(0)) }
 
     @Test fun t0() { assertThat( StringToInteger.myAtoi("0"), `is`(0)) }
     @Test fun t1() { assertThat( StringToInteger.myAtoi("1"), `is`(1)) }
