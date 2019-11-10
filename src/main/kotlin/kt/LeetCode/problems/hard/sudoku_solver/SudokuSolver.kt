@@ -4,489 +4,332 @@ import org.hamcrest.core.Is.`is`
 import org.junit.Assert.assertThat
 import org.junit.Test
 
-class Solution {
-    companion object {
-        val NO_INDEX = 0
-        val NO_VALUE = 100
-    }
+typealias SudokuTask = Array<IntArray>
 
-    inner class NoSolutionFound : java.lang.RuntimeException("Not enough information to resolve the sudoku")
-    inner class WrongSudokuStatement(d: Int) : java.lang.RuntimeException("The duplicate value $d detected!")
+object SudokuSolver {
 
-    val index = Array(9){ IntArray(9) }
+    fun resolve(task: SudokuTask): Array<IntArray> {
+        val board = Board(9)
 
-    fun solveSudoku(board: Array<CharArray>) {
+        for (l in 0..8)
+            for (c in 0..8)
+                if (task[l][c] != 0) board.put(l, c, task[l][c])
 
-        val lin = buildSetsByLines(board)
-        val col = buildSetsByColumns(board)
-        val sq = buildSetsBySquares(board)
-        var unresolved = getUnresolved(board)
+        while (board.rest > 0) {
+            val wasChanges = board.turn()
 
-
-        while (unresolved > 0) {
-            val (l, c, v) = findMin(lin, col, sq, board)
-
-            val cross = lin[l] and col[c] and sq[l/3][c/3]
-
-            when(v) {
-                1 -> { setDigit(lin, col, sq, board, l, c, positionOf1(cross)  ); unresolved--; }
-                in 2..9 -> unresolved = makeHypotesis(lin, col, sq, board, l, c, unresolved, cross)
-                0 -> unresolved = switchHypotesis(lin, col, sq, board)
+            if (wasChanges == false && board.rest > 0) {
+                throw UnresolvedGame(board)
+                //todo: implement recursive "suggestion" algorithm
             }
 
         }
+
+        return board.board
     }
 
-    val hyotesisStack = java.util.LinkedList<State>()
-    data class State(val lin: IntArray, val col: IntArray, val sq: Array<IntArray>, val board: Array<CharArray>, val l: Int, val c: Int, val unresolved: Int, val nextMask: Int)
 
-    private fun makeHypotesis(lin: IntArray, col: IntArray, sq: Array<IntArray>, board: Array<CharArray>, l: Int, c: Int, unresolved: Int, mask: Int): Int {
-        val d = firstOf1(mask)
-        val nextMask = mask shr d
+}
 
-        if (nextMask > 0) { // if the set of available solutions > 1
-            // save the hypotesis to stack in order to restore it and switch ti the next one in case if this hypotesis will be wrong
-            val st = State(lin.copyOf(), col.copyOf(),
-                    Array(3) { sq[it].copyOf() },
-                    Array(9) { board[it].copyOf() },
-                    l, c, unresolved, nextMask)
+class UnresolvedGame(board_: Board) : RuntimeException("The game cannot be resolved!") {
+    val board = board_.copy()
+}
 
-            hyotesisStack.push(st)
+
+data class IntSet(private val internalSet: BooleanArray) {
+    companion object {
+        fun full() = IntSet(BooleanArray(10) { true })
+        fun empty() = IntSet(BooleanArray(10) { false })
+    }
+
+    var size = internalSet.count { it } - 1
+        private set
+
+    fun remove(element: Int) {
+        if (internalSet[element]) {
+            size--
+            internalSet[element] = false
+        }
+    }
+
+    fun erase() {
+        for (i in 1 until internalSet.size) internalSet[i] = false
+        size = 0
+    }
+
+    fun add(element: Int) {
+        if (!internalSet[element]) {
+            size++
+            internalSet[element] = true
+        }
+    }
+
+    fun has(element: Int) = internalSet[element]
+
+    fun getFirst(): Int {
+        for (i in 1 until internalSet.size) if (internalSet[i]) return i
+        return 0
+    }
+
+
+    override fun toString(): String {
+        val sb = StringBuilder("IntSet{size=")
+        sb.append(this.size)
+        sb.append(", [")
+
+        for (i in 1 until (internalSet.size - 1)){
+            sb.append( when(internalSet[i]){
+                true -> i
+                else -> '.'
+            } )
         }
 
-        setDigit(lin, col, sq, board, l, c, d)
+        sb.append("]}")
 
-        return unresolved - 1
+        return sb.toString()
+    }
+}
+
+// Copy of the original board (array and sub-arrays)
+data class Board(val SIZE: Int) {
+    val board = Array(SIZE) { IntArray(SIZE) }
+    var rest = SIZE * SIZE
+
+    val drafts = Array(SIZE) { Array(SIZE) { IntSet.full() } }
+
+    val lineIndexs = Array(SIZE) { IntSet.full() }
+    val columnIndexs = Array(SIZE) { IntSet.full() }
+    val sectionIndexes = Array(SIZE / 3) { Array(SIZE / 3) { IntSet.full() } }
+
+    fun put(l: Int, c: Int, value: Int) {
+        if (board[l][c] != 0) {
+            throw ElementAlreadySetPresent(l, c, value, board[l][c])
+        }
+
+        board[l][c] = value
+        rest--
+        val sL = l / 3
+        val sC = c / 3
+
+        lineIndexs[l].remove(value)
+        columnIndexs[c].remove(value)
+        sectionIndexes[sL][sC].remove(value)
+
+        drafts[l][c].erase()
+
+        for (col in 0 until SIZE) if (board[l][col] == 0) drafts[l][col].remove(value)
+        for (lin in 0 until SIZE) if (board[lin][c] == 0) drafts[lin][c].remove(value)
+
+        for (lin in (sL * 3) until ((sL + 1) * 3))
+            for (col in (sC * 3) until ((sC + 1) * 3))
+                if (board[lin][col] == 0) drafts[lin][col].remove(value)
+
     }
 
-    private fun switchHypotesis(lin: IntArray, col: IntArray, sq: Array<IntArray>, board: Array<CharArray>): Int {
-        if (hyotesisStack.size == 0) throw NoSolutionFound()
-
-        val st = hyotesisStack.pop()
-
-        // restore the state
-        st.lin.forEachIndexed{idx, i -> lin[idx] = i}
-        st.col.forEachIndexed{idx, i -> col[idx] = i}
-        st.sq.forEachIndexed{idxL, arr -> arr.forEachIndexed{idxC, v -> sq[idxL][idxC] = v }}
-        st.board.forEachIndexed{idxL, arr -> arr.forEachIndexed{idxC, v -> board[idxL][idxC] = v }}
-
-        return makeHypotesis(lin, col, sq, board, st.l, st.c, st.unresolved, st.nextMask)
-    }
-
-
-    private fun setDigit(lin: IntArray, col: IntArray, sq: Array<IntArray>, board: Array<CharArray>, l: Int, c: Int, d: Int) {
-        if (d < 1 || d > 9) throw RuntimeException("Index broken: the value in ($l, $c) calculated as $d by the index!")
-
-        if (board[l][c] != '.') throw RuntimeException("The position ($l, $c) to set up a digit defined wrong (the board already contains a digit at the place)!")
-        board[l][c] = '0' + d
-
-        val lsq = l/3
-        val csq = c/3
-        val mask = 1 shl (d-1)
-        lin[l]       = lin[l]       xor mask
-        col[c]       = col[c]       xor mask
-        sq[lsq][csq] = sq[lsq][csq] xor mask
-    }
-
-    fun findMin(lin: IntArray, col: IntArray, sq: Array<IntArray>, board: Array<CharArray>): Triple<Int, Int, Int> {
-        var min = NO_VALUE
-        var minL = -1
-        var minC = -1
-
-        // todo: comment
-        for (l in 0..8)
-            for (c in 0..8)
-                when (board[l][c]) {
-                     '.' -> countOf1(lin[l] and col[c] and sq[l/3][c/3]).apply {
-                         if (this < min) { min = this; minL = l; minC = c }
-                     }
-                    else -> -1
-                }
+    fun turn(): Boolean {
+        var success = checkIndexes()
 
 /*
-        for (l in 0..8)
-            for (c in 0..8)
-                index[l][c] = when (board[l][c]) {
-                     '.' -> countOf1(lin[l] and col[c] and sq[l/3][c/3]).apply {
-                         if (this < min) { min = this; minL = l; minC = c }
-                     }
-                    else -> -1
-                }
-
+        if (!success && rest > 0) {
+            success = success || reduceByLines()
+            success = success || reduceByColumns()
+        }
 */
 
-        return Triple(minL, minC, min)
+
+        return success;
     }
 
-    fun buildSetsByLines(board: Array<CharArray>): IntArray {
-        val lin = IntArray(9)
-        for( l in 0..8 )
-            lin[l] = toBSet( board[l][0], board[l][1], board[l][2], board[l][3], board[l][4], board[l][5], board[l][6], board[l][7], board[l][8] )
-        return lin
+    fun checkIndexes(): Boolean {
+        var success = false
+
+        success = success || checkLineIndexes(); if (rest == 0) return success
+        success = success || checkColumnIndexes(); if (rest == 0) return success
+        success = success || checkSectionIndexes(); if (rest == 0) return success
+        success = success || checkDrafts(); if (rest == 0) return success
+
+        return success
     }
 
-    private fun buildSetsByColumns(board: Array<CharArray>): IntArray {
-        val col = IntArray(9)
-        for( c in 0..8 )
-            col[c] = toBSet( board[0][c], board[1][c], board[2][c], board[3][c], board[4][c], board[5][c], board[6][c], board[7][c], board[8][c] )
-        return col
-    }
-
-    private fun buildSetsBySquares(board: Array<CharArray>): Array<IntArray> {
-        val sq = Array<IntArray>(3){ IntArray(3) }
-        for( ls in 0..2 )
-            for( cs in 0..2 ){
-                val l = ls * 3
-                val c = cs * 3
-                sq[ls][cs] = toBSet( board[l][c],   board[l+1][c],   board[l+2][c],
-                        board[l][c+1], board[l+1][c+1], board[l+2][c+1],
-                        board[l][c+2], board[l+1][c+2], board[l+2][c+2])
+    fun checkColumnIndexes(): Boolean {
+        var success = false
+        for (col in 0 until SIZE) {
+            if (lineIndexs[col].size == 1) {
+                val l = findEmpty(0, col, +1, +0)
+                this.put(l, col, lineIndexs[col].getFirst())
+                success = true
             }
-        return sq
+        }
+        return success
     }
 
-    private fun getUnresolved(board: Array<CharArray>): Int {
-        var unresolved = 0
+    fun checkLineIndexes(): Boolean {
+        var success = false
+        for (lin in 0 until SIZE) {
+            if (lineIndexs[lin].size == 1) {
+                val c = findEmpty(lin, 0, +0, +1)
+                this.put(lin, c, lineIndexs[lin].getFirst())
+                success = true
+            }
+        }
+        return success
+    }
+
+    fun checkSectionIndexes(): Boolean {
+        var success = false
+        for (ls in 0..2) {
+            for (cs in 0..2) {
+                if (sectionIndexes[ls][cs].size == 1) {
+                    val (l, c) = findEmptyInSection(ls, cs)
+                    this.put(l,c, sectionIndexes[ls][cs].getFirst() )
+                    success = true
+                }
+            }
+        }
+        return success
+    }
+
+    private fun checkDrafts(): Boolean {
+        var success = false
         for (l in 0..8) {
             for (c in 0..8) {
-                if (board[l][c] == '.') unresolved++
+                if (drafts[l][c].size == 1) {
+                    this.put(l,c, drafts[l][c].getFirst())
+                    success = true
+                }
             }
         }
-        return unresolved
+        return success
     }
 
-    fun toBSet(vararg ch: Char): Int {
-        var b = 0
-        for(i in 0..8) {
-            val d = ch[i].toDigit()
-            val bit = when(d) {
-                -1 -> 0
-                else -> 1 shl d
-            }
-            if( (b and bit) > 0 ) throw WrongSudokuStatement( positionOf1(bit) )
-            b = b or bit
+
+    fun findEmptyInSection(ls: Int, cs: Int): Pair<Int, Int> {
+        for (l in (ls * 3) until ((ls + 1) * 3))
+            for (c in (cs * 3) until ((cs + 1) * 3))
+                if (board[l][c] != 0)
+                    return l to c
+        return -1 to -1
+    }
+
+    fun findEmpty(l0: Int, c0: Int, dl: Int, dc: Int): Int {
+        var l = l0
+        var c = c0
+        while (l < SIZE && c < SIZE && board[l][c] != 0) {
+            l += dl; c += dc;
         }
-        val r = b.inv() and 0b111111111
-        return r
-    }
-
-    fun countOf1(i: Int): Int {
-        return   (i and 0b000000001) +
-                ((i and 0b000000010) shr 1) +
-                ((i and 0b000000100) shr 2) +
-                ((i and 0b000001000) shr 3) +
-                ((i and 0b000010000) shr 4) +
-                ((i and 0b000100000) shr 5) +
-                ((i and 0b001000000) shr 6) +
-                ((i and 0b010000000) shr 7) +
-                ((i and 0b100000000) shr 8)
-    }
-
-    fun firstOf1(i: Int): Int {
-        return when {
-                   (i and 0b000000001) > 0 -> 1
-                   (i and 0b000000010) > 0 -> 2
-                   (i and 0b000000100) > 0 -> 3
-                   (i and 0b000001000) > 0 -> 4
-                   (i and 0b000010000) > 0 -> 5
-                   (i and 0b000100000) > 0 -> 6
-                   (i and 0b001000000) > 0 -> 7
-                   (i and 0b010000000) > 0 -> 8
-                   (i and 0b100000000) > 0 -> 9
-                                 else -> -1
-        }
-    }
-
-    fun positionOf1(i: Int): Int {
-        var p = 0
-        var mask = i
-        while(mask > 0) {
-            p += 1
-            mask = mask shr 1
-        }
-        return p
-    }
-
-    fun Char.toDigit(): Int = when(this) {
-        '.' -> -1
-        else -> this - '1'
+        if (l < SIZE && c < SIZE) return if (dl == 0) c else l
+        return -1
     }
 
 }
+
+class ElementAlreadySetPresent(l: Int, c: Int, newValue: Int, currentValue: Int) : RuntimeException(
+        "Can't add the '$newValue' to [${l+1},${c+1}] - there is the another value already present: '$currentValue'"
+)
+
 
 class Tests {
 
-    val s = Solution()
-
-    @Test fun positionOf1_test1(){
-        0b00100.let{ assertThat( it , `is`( 1 shl (s.positionOf1(it)-1)) ) }
-    }
-    @Test fun positionOf1_test2(){
-        0b100000000.let{ assertThat( it , `is`( 1 shl (s.positionOf1(it)-1)) ) }
-    }
-    @Test fun positionOf1_test3(){
-        0b000100000.let{ assertThat( it , `is`( 1 shl (s.positionOf1(it)-1)) ) }
-    }
-    @Test fun positionOf1_test4(){
-        0b000000001.let{ assertThat( it , `is`( 1 shl (s.positionOf1(it)-1)) ) }
-    }
-    @Test fun positionOf1_test0(){
-        assertThat( s.positionOf1(0), `is`(0) )
-    }
-
-    @Test fun buildSetsByLines_test1(){
-        val answer: Array<CharArray> = arrayOf(
-                charArrayOf('4','3','5', '2','6','9', '7','8','1'),
-                charArrayOf('6','8','2', '5','7','1', '4','9','3'),
-                charArrayOf('1','9','7', '8','3','4', '5','6','2'),
-
-                charArrayOf('8','2','6', '1','9','5', '3','4','7'),
-                charArrayOf('3','7','4', '6','8','2', '9','1','5'),
-                charArrayOf('9','5','1', '7','4','3', '6','2','8'),
-
-                charArrayOf('5','1','9', '3','2','6', '8','7','4'),
-                charArrayOf('2','4','8', '9','5','7', '1','3','6'),
-                charArrayOf('7','6','3', '4','1','8', '2','5','9')
+    @Test
+    fun test0() {
+        test("""
+                3 6 2   5 8 4   9 1 7   |   3 6 2   5 8 4   9 1 7
+                5 4 7   2 1 9   3 6 8   |   5 4 7   2 1 9   3 6 8
+                8 9 1   7 6 3   2 4 5   |   8 9 1   7 6 3   2 4 5
+                                        |                          
+                2 7 8   6 4 5   1 3 9   |   2 7 8   6 4 5   1 3 9
+                1 5 9   3 2 7   4 8 6   |   1 5 9   3 2 7   4 8 6
+                6 3 4   8 9 1   5 7 2   |   6 3 4   8 9 1   5 7 2
+                                        |                         
+                7 8 5   1 3 2   6 9 4   |   7 8 5   1 3 2   6 9 4
+                4 1 6   9 5 8   7 2 3   |   4 1 6   9 5 8   7 2 3
+                9 2 3   4 7 6   8 5 1   |   9 2 3   4 7 6   8 5 1
+            """.trimIndent()
         )
-
-        val task = Array(9){ i -> answer[i].copyOf()}.apply {
-            for (l in 0..8)
-                for (c in 0..8)
-                    if (this[l][c] == '7') this[l][c] = '.'
-        }
-
-        val lin = s.buildSetsByLines(task)
-
-        assertThat(lin[0], `is`(0b001000000))
-        assertThat(lin[1], `is`(0b001000000))
-        assertThat(lin[2], `is`(0b001000000))
-        assertThat(lin[3], `is`(0b001000000))
-        assertThat(lin[4], `is`(0b001000000))
-        assertThat(lin[5], `is`(0b001000000))
-        assertThat(lin[6], `is`(0b001000000))
-        assertThat(lin[7], `is`(0b001000000))
-        assertThat(lin[8], `is`(0b001000000))
-
     }
 
-    @Test(expected = Solution.WrongSudokuStatement::class)
-    fun buildSetsByLines_test2(){
-        val answer: Array<CharArray> = arrayOf(
-                charArrayOf('4','3','5', '2','6','9', '7','8','1'),
-                charArrayOf('6','8','2', '5','7','1', '4','9','3'),
-                charArrayOf('1','9','7', '8','3','4', '5','6','2'),
-
-                charArrayOf('8','2','6', '1','9','5', '3','4','7'),
-                charArrayOf('3','7','4', '6','8','2', '9','1','5'),
-                charArrayOf('9','5','1', '7','4','3', '6','2','8'),
-
-                charArrayOf('5','1','9', '3','2','6', '8','7','4'),
-                charArrayOf('2','4','8', '9','5','7', '1','3','6'),
-                charArrayOf('7','6','3', '4','1','8', '2','9','9')
+    @Test
+    fun test1() {
+        test("""
+                3 6 2   5 8 4   9 1 7   |   3 6 2   5 8 4   9 1 7
+                5 4 7   2 1 9   3 6 8   |   5 4 7   2 1 9   3 6 8
+                8 9 1   7 6 3   2 4 5   |   8 9 1   7 6 3   2 4 5
+                                        |                          
+                2 7 8   6 4 5   1 3 9   |   2 7 8   6 4 5   1 3 9
+                1 5 9   3 . 7   4 8 6   |   1 5 9   3 2 7   4 8 6
+                6 3 4   8 9 1   5 7 2   |   6 3 4   8 9 1   5 7 2
+                                        |                         
+                7 8 5   1 3 2   6 9 4   |   7 8 5   1 3 2   6 9 4
+                4 1 6   9 5 8   7 2 3   |   4 1 6   9 5 8   7 2 3
+                9 2 3   4 7 6   8 5 1   |   9 2 3   4 7 6   8 5 1
+            """.trimIndent()
         )
-
-        val task = Array(9){ i -> answer[i].copyOf()}.apply {
-            for (l in 0..8)
-                for (c in 0..8)
-                    if (this[l][c] == '7') this[l][c] = '.'
-        }
-
-        s.buildSetsByLines(task)
     }
 
-    @Test fun countOf1_test1(){ assertThat( s.countOf1(0b0001), `is`(1) ) }
-    @Test fun countOf1_test2(){ assertThat( s.countOf1(0b1010), `is`(2) ) }
-    @Test fun countOf1_test8(){ assertThat( s.countOf1(0b011111111), `is`(8) ) }
-
-
-    @Test fun toBSet_test0(){ assertThat(  s.toBSet('.','.','.','.','.','.','.','.','.'), `is`(0b111111111)  ) }
-    @Test fun toBSet_test1(){ assertThat(  s.toBSet('.','.','.','9','.','.','.','.','.'), `is`(0b011111111)  ) }
-    @Test fun toBSet_test2(){ assertThat(  s.toBSet('.','5','.','.','.','.','2','.','.'), `is`(0b111101101)  ) }
-    @Test fun toBSet_test3(){ assertThat(  s.toBSet('.','8','.','9','.','.','4','.','.'), `is`(0b001110111)  ) }
-    @Test fun toBSet_test4(){ assertThat(  s.toBSet('.','3','5','2','6','9','7','8','1'), `is`(0b000001000)  ) }
-
-    @Test fun t1() {
-        val answer: Array<CharArray> = arrayOf(
-                charArrayOf('4','3','5','2','6','9','7','8','1'),
-                charArrayOf('6','8','2','5','7','1','4','9','3'),
-                charArrayOf('1','9','7','8','3','4','5','6','2'),
-                charArrayOf('8','2','6','1','9','5','3','4','7'),
-                charArrayOf('3','7','4','6','8','2','9','1','5'),
-                charArrayOf('9','5','1','7','4','3','6','2','8'),
-                charArrayOf('5','1','9','3','2','6','8','7','4'),
-                charArrayOf('2','4','8','9','5','7','1','3','6'),
-                charArrayOf('7','6','3','4','1','8','2','5','9')
+    @Test
+    fun test2() {
+        test("""
+                3 6 2   5 8 4   9 . 7   |   3 6 2   5 8 4   9 1 7
+                5 4 7   . 1 9   3 6 8   |   5 4 7   2 1 9   3 6 8
+                8 9 1   7 6 .   2 4 5   |   8 9 1   7 6 3   2 4 5
+                                        |                          
+                2 7 8   6 . 5   1 3 9   |   2 7 8   6 4 5   1 3 9
+                1 . 9   3 2 7   4 8 6   |   1 5 9   3 2 7   4 8 6
+                . 3 4   8 9 1   5 7 2   |   6 3 4   8 9 1   5 7 2
+                                        |                         
+                . 8 5   1 3 2   6 9 4   |   7 8 5   1 3 2   6 9 4
+                4 1 6   9 5 .   7 2 3   |   4 1 6   9 5 8   7 2 3
+                . 2 3   4 7 6   8 5 1   |   9 2 3   4 7 6   8 5 1
+            """.trimIndent()
         )
-
-        val task = Array(9){ i -> answer[i].copyOf()}.apply {
-            this[0][0] = '.'
-        }
-
-        s.solveSudoku(task)
-
-        assertThat( task, `is`(answer) )
     }
 
-    @Test fun t2() {
-        val answer: Array<CharArray> = arrayOf(
-                charArrayOf('4','3','5','2','6','9','7','8','1'),
-                charArrayOf('6','8','2','5','7','1','4','9','3'),
-                charArrayOf('1','9','7','8','3','4','5','6','2'),
-                charArrayOf('8','2','6','1','9','5','3','4','7'),
-                charArrayOf('3','7','4','6','8','2','9','1','5'),
-                charArrayOf('9','5','1','7','4','3','6','2','8'),
-                charArrayOf('5','1','9','3','2','6','8','7','4'),
-                charArrayOf('2','4','8','9','5','7','1','3','6'),
-                charArrayOf('7','6','3','4','1','8','2','5','9')
+    @Test
+    fun test3() {
+        test("""
+                . . .   5 8 4   9 1 7   |   3 6 2   5 8 4   9 1 7
+                . . .   2 1 9   3 6 8   |   5 4 7   2 1 9   3 6 8
+                . . .   7 6 3   2 4 5   |   8 9 1   7 6 3   2 4 5
+                                        |                          
+                2 7 8   . . .   1 3 9   |   2 7 8   6 4 5   1 3 9
+                1 5 9   . . .   4 8 6   |   1 5 9   3 2 7   4 8 6
+                6 3 4   . . .   5 7 2   |   6 3 4   8 9 1   5 7 2
+                                        |                         
+                7 8 5   1 3 2   . . .   |   7 8 5   1 3 2   6 9 4
+                4 1 6   9 5 8   . . .   |   4 1 6   9 5 8   7 2 3
+                9 2 3   4 7 6   . . .   |   9 2 3   4 7 6   8 5 1
+            """.trimIndent()
         )
-
-        val task = Array(9){ i -> answer[i].copyOf()}.apply {
-            this[0][0] = '.'
-            this[0][3] = '.'
-            this[0][6] = '.'
-        }
-
-        s.solveSudoku(task)
-
-        assertThat( task, `is`(answer) )
     }
 
-/*
-    todo: refactor
-    @Test(expected = Solution.NoSolutionFound::class)
-    fun t3() {
-        val answer: Array<CharArray> = arrayOf(
-                charArrayOf('4','3','5', '2','6','9', '7','8','1'),
-                charArrayOf('6','8','2', '5','7','1', '4','9','3'),
-                charArrayOf('1','9','7', '8','3','4', '5','6','2'),
 
-                charArrayOf('8','2','6', '1','9','5', '3','4','7'),
-                charArrayOf('3','7','4', '6','8','2', '9','1','5'),
-                charArrayOf('9','5','1', '7','4','3', '6','2','8'),
+    fun test(statement: String) {
 
-                charArrayOf('5','1','9', '3','2','6', '8','7','4'),
-                charArrayOf('2','4','8', '9','5','7', '1','3','6'),
-                charArrayOf('7','6','3', '4','1','8', '2','9','9')
-        )
+        val task = Array(9) { IntArray(9) }
+        val solution = Array(9) { IntArray(9) }
 
-        val task = Array(9){ i -> answer[i].copyOf()}.apply {
-            for (l in 0..8)
-                for (c in 0..8)
-                    if (this[l][c] in '3'..'5') this[l][c] = '.'
-        }
+        var lin = -1
+        statement
+                .lines()
+                .forEach { st ->
+                    val lr = st.split("|")
+                    val taskStr = lr[0].trim().split(" ").filter { it.isNotBlank() }
+                    val solutionStr = lr[1].trim().split(" ").filter { it.isNotBlank() }
+                    if (taskStr.isNotEmpty() && solutionStr.isNotEmpty()) {
+                        lin++
 
-        s.solveSudoku(task)
+                        fun toNum(ch: Char) = if (ch.isDigit()) (ch - '0') else 0
 
-        assertThat( task, `is`(answer) )
+                        for (c in 0..8) task[lin][c] = toNum(taskStr[c][0])
+                        for (c in 0..8) solution[lin][c] = toNum(solutionStr[c][0])
+
+                    }
+
+                }
+
+        val resolved = SudokuSolver.resolve(task)
+
+        assertThat(resolved, `is`(solution))
+
     }
-*/
-
-    @Test fun t4() {
-        val answer: Array<CharArray> = arrayOf(
-                charArrayOf('4','3','5', '2','6','9', '7','8','1'),
-                charArrayOf('6','8','2', '5','7','1', '4','9','3'),
-                charArrayOf('1','9','7', '8','3','4', '5','6','2'),
-
-                charArrayOf('8','2','6', '1','9','5', '3','4','7'),
-                charArrayOf('3','7','4', '6','8','2', '9','1','5'),
-                charArrayOf('9','5','1', '7','4','3', '6','2','8'),
-
-                charArrayOf('5','1','9', '3','2','6', '8','7','4'),
-                charArrayOf('2','4','8', '9','5','7', '1','3','6'),
-                charArrayOf('7','6','3', '4','1','8', '2','5','9')
-        )
-
-        val task = Array(9){ i -> answer[i].copyOf()}.apply {
-            for (l in 0..8)
-                for (c in 0..8)
-                    if (this[l][c] == '7') this[l][c] = '.'
-        }
-
-        s.solveSudoku(task)
-
-        assertThat( task, `is`(answer) )
-    }
-
-    @Test fun tLeetCode1() {
-
-        val task: Array<CharArray> = arrayOf(
-                charArrayOf('5','3','.', '.','7','.', '.','.','.'),
-                charArrayOf('6','.','.', '1','9','5', '.','.','.'),
-                charArrayOf('.','9','8', '.','.','.', '.','6','.'),
-
-                charArrayOf('8','.','.', '.','6','.', '.','.','3'),
-                charArrayOf('4','.','.', '8','.','3', '.','.','1'),
-                charArrayOf('7','.','.', '.','2','.', '.','.','6'),
-
-                charArrayOf('.','6','.', '.','.','.', '2','8','.'),
-                charArrayOf('.','.','.', '4','1','9', '.','.','5'),
-                charArrayOf('.','.','.', '.','8','.', '.','7','9'))
-
-        val answer: Array<CharArray> = arrayOf(
-                charArrayOf('5','3','4', '6','7','8', '9','1','2'),
-                charArrayOf('6','7','2', '1','9','5', '3','4','8'),
-                charArrayOf('1','9','8', '3','4','2', '5','6','7'),
-
-                charArrayOf('8','5','9', '7','6','1', '4','2','3'),
-                charArrayOf('4','2','6', '8','5','3', '7','9','1'),
-                charArrayOf('7','1','3', '9','2','4', '8','5','6'),
-
-                charArrayOf('9','6','1', '5','3','7', '2','8','4'),
-                charArrayOf('2','8','7', '4','1','9', '6','3','5'),
-                charArrayOf('3','4','5', '2','8','6', '1','7','9'))
-
-        s.solveSudoku(task)
-
-        assertThat( task, `is`(answer) )
-    }
-
-    @Test fun tLeetCode2() {
-
-        val task: Array<CharArray> = arrayOf(
-                charArrayOf('.','.','9', '7','4','8', '.','.','.'),
-                charArrayOf('7','.','.', '.','.','.', '.','.','.'),
-                charArrayOf('.','2','.', '1','.','9', '.','.','.'),
-
-                charArrayOf('.','.','7', '.','.','.', '2','4','.'),
-                charArrayOf('.','6','4', '.','1','.', '5','9','.'),
-                charArrayOf('.','9','8', '.','.','.', '3','.','.'),
-
-                charArrayOf('.','.','.', '8','.','3', '.','2','.'),
-                charArrayOf('.','.','.', '.','.','.', '.','.','6'),
-                charArrayOf('.','.','.', '2','7','5', '9','.','.'))
-
-
-        val answer: Array<CharArray> = arrayOf(
-                charArrayOf('5','1','9', '7','4','8', '6','3','2'),
-                charArrayOf('7','8','3', '6','5','2', '4','1','9'),
-                charArrayOf('4','2','6', '1','3','9', '8','7','5'),
-
-                charArrayOf('3','5','7', '9','8','6', '2','4','1'),
-                charArrayOf('2','6','4', '3','1','7', '5','9','8'),
-                charArrayOf('1','9','8', '5','2','4', '3','6','7'),
-
-                charArrayOf('9','7','5', '8','6','3', '1','2','4'),
-                charArrayOf('8','3','2', '4','9','1', '7','5','6'),
-                charArrayOf('6','4','1', '2','7','5', '9','8','3'))
-/*
-
-                charArrayOf('1','2','9', '7','4','8', '1','2','2'),
-                charArrayOf('7','1','4', '6','3','2', '8','5','9'),
-                charArrayOf('8','2','3', '1','5','9', '6','7','4'),
-
-                charArrayOf('3','5','7', '9','8','6', '2','4','1'),
-                charArrayOf('2','6','4', '3','1','7', '5','9','8'),
-                charArrayOf('1','9','8', '5','2','4', '3','6','7'),
-
-                charArrayOf('9','7','1', '8','6','3', '4','2','5'),
-                charArrayOf('5','3','2', '4','9','1', '7','8','6'),
-                charArrayOf('4','8','6', '2','7','5', '9','1','3'))
-*/
-
-        s.solveSudoku(task)
-
-        assertThat( task, `is`(answer) )
-    }
-
 }
-
