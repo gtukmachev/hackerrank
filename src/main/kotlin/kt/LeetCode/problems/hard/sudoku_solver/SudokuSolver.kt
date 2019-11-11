@@ -3,6 +3,7 @@ package kt.LeetCode.problems.hard.sudoku_solver
 import org.hamcrest.core.Is.`is`
 import org.junit.Assert.assertThat
 import org.junit.Test
+import java.util.*
 
 typealias SudokuTask = Array<IntArray>
 
@@ -11,27 +12,34 @@ object SudokuSolver {
     fun resolve(task: SudokuTask): Array<IntArray> {
         val board = Board(9)
 
-        for (l in 0..8)
-            for (c in 0..8)
-                if (task[l][c] != 0) board.put(l, c, task[l][c])
+        for (l in 0..8) {
+            for (c in 0..8) {
+                val n = task[l][c]
+                if (n != 0) board.put(l, c, n)
+            }
+        }
 
         while (board.rest > 0) {
             val wasChanges = board.turn()
 
-            if (wasChanges == false && board.rest > 0) {
+            if (!wasChanges && board.rest > 0) {
                 throw UnresolvedGame(board)
                 //todo: implement recursive "suggestion" algorithm
+                //      find a draft with two possible values and try to resolve the game recursively for the first, then for the second one.
             }
-
         }
 
         return board.board
     }
 
-
 }
 
-class UnresolvedGame(board_: Board) : RuntimeException("The game cannot be resolved!") {
+class UnresolvedGame(board_: Board) : RuntimeException("The Sudoku game cannot be resolved (turn = ${board_.turnsCounter})!") {
+    val board = board_.copy()
+}
+
+
+class PossibleForeverLoop(board_: Board) : RuntimeException("The Sudoku game cannot be resolved by this algorithm - too many turns performed already (turn = ${board_.turnsCounter})!") {
     val board = board_.copy()
 }
 
@@ -45,11 +53,13 @@ data class IntSet(private val internalSet: BooleanArray) {
     var size = internalSet.count { it } - 1
         private set
 
-    fun remove(element: Int) {
+    fun remove(element: Int): Boolean {
         if (internalSet[element]) {
             size--
             internalSet[element] = false
+            return true
         }
+        return false
     }
 
     fun erase() {
@@ -101,8 +111,13 @@ data class Board(val SIZE: Int) {
     val columnIndexs = Array(SIZE) { IntSet.full() }
     val sectionIndexes = Array(SIZE / 3) { Array(SIZE / 3) { IntSet.full() } }
 
+    val putQueue: Queue<Pair<Int, Int>> = LinkedList()
+    var turnsCounter = 0
+        private set
+
     fun put(l: Int, c: Int, value: Int) {
         if (board[l][c] != 0) {
+            if (board[l][c] == value) return
             throw ElementAlreadySetPresent(l, c, value, board[l][c])
         }
 
@@ -117,108 +132,62 @@ data class Board(val SIZE: Int) {
 
         drafts[l][c].erase()
 
-        for (col in 0 until SIZE) if (board[l][col] == 0) drafts[l][col].remove(value)
-        for (lin in 0 until SIZE) if (board[lin][c] == 0) drafts[lin][c].remove(value)
+
+        fun cleanDraft(ld: Int, cd: Int) {
+            if (board[ld][cd] == 0) { // there is no value yet in this cell
+                if (drafts[ld][cd].remove(value)) { // remove the value from the draft
+                    if (drafts[ld][cd].size == 1) { // if the draft has only a single value now
+                        putQueue.add(ld to cd)
+                    }
+                }
+            }
+        }
+
+        for (col in 0 until SIZE) cleanDraft(l, col)
+        for (lin in 0 until SIZE) cleanDraft(lin, c)
 
         for (lin in (sL * 3) until ((sL + 1) * 3))
             for (col in (sC * 3) until ((sC + 1) * 3))
-                if (board[lin][col] == 0) drafts[lin][col].remove(value)
+                cleanDraft(lin, col)
+    }
 
+    fun putByQueue(): Boolean {
+        if (putQueue.isEmpty()) return false
+        var coordinates = putQueue.poll()
+        while (coordinates != null) {
+            val (l, c) = coordinates
+            if (board[l][c] == 0) {
+                put(l, c, drafts[l][c].getFirst())
+            }
+            coordinates = putQueue.poll()
+        }
+        return true
     }
 
     fun turn(): Boolean {
-        var success = checkIndexes()
+        turnsCounter++; if (turnsCounter >= 1000) throw PossibleForeverLoop(this)
 
-/*
-        if (!success && rest > 0) {
-            success = success || reduceByLines()
-            success = success || reduceByColumns()
-        }
+        if (putByQueue()                ) return true // put all value if draft contains a last not excluded value
+        if (checkIndexesForUniqueValue()) return true // If a line, column or section contains some number (in drafts) only once => put this one!
+//        if (reduceBySectionLines()      ) return true // if a section contains a value (in drafts) in a single line/column => remove this value from this line/column in other sections in this raw
+//        if (reduceByLinkedPairs()       ) return true // if 2 sections in the same line/column contains a value in the same two lines/column (and do not contain this value into the 3d line/column) => remove this value in the third section in the row from these 2 lines/columns
+        return false
+    }
+
+    /**
+     *
+     */
+    private fun checkIndexesForUniqueValue(): Boolean {
+        var success = false
+
+/* TODO:
+
+        success = success ||    checkLineIndexesForUniqueValue(); if (rest == 0) return success
+        success = success ||  checkColumnIndexesForUniqueValue(); if (rest == 0) return success
+        success = success || checkSectionIndexesForUniqueValue(); if (rest == 0) return success
 */
 
-
-        return success;
-    }
-
-    fun checkIndexes(): Boolean {
-        var success = false
-
-        success = success || checkLineIndexes(); if (rest == 0) return success
-        success = success || checkColumnIndexes(); if (rest == 0) return success
-        success = success || checkSectionIndexes(); if (rest == 0) return success
-        success = success || checkDrafts(); if (rest == 0) return success
-
         return success
-    }
-
-    fun checkColumnIndexes(): Boolean {
-        var success = false
-        for (col in 0 until SIZE) {
-            if (lineIndexs[col].size == 1) {
-                val l = findEmpty(0, col, +1, +0)
-                this.put(l, col, lineIndexs[col].getFirst())
-                success = true
-            }
-        }
-        return success
-    }
-
-    fun checkLineIndexes(): Boolean {
-        var success = false
-        for (lin in 0 until SIZE) {
-            if (lineIndexs[lin].size == 1) {
-                val c = findEmpty(lin, 0, +0, +1)
-                this.put(lin, c, lineIndexs[lin].getFirst())
-                success = true
-            }
-        }
-        return success
-    }
-
-    fun checkSectionIndexes(): Boolean {
-        var success = false
-        for (ls in 0..2) {
-            for (cs in 0..2) {
-                if (sectionIndexes[ls][cs].size == 1) {
-                    val (l, c) = findEmptyInSection(ls, cs)
-                    this.put(l,c, sectionIndexes[ls][cs].getFirst() )
-                    success = true
-                }
-            }
-        }
-        return success
-    }
-
-    private fun checkDrafts(): Boolean {
-        var success = false
-        for (l in 0..8) {
-            for (c in 0..8) {
-                if (drafts[l][c].size == 1) {
-                    this.put(l,c, drafts[l][c].getFirst())
-                    success = true
-                }
-            }
-        }
-        return success
-    }
-
-
-    fun findEmptyInSection(ls: Int, cs: Int): Pair<Int, Int> {
-        for (l in (ls * 3) until ((ls + 1) * 3))
-            for (c in (cs * 3) until ((cs + 1) * 3))
-                if (board[l][c] != 0)
-                    return l to c
-        return -1 to -1
-    }
-
-    fun findEmpty(l0: Int, c0: Int, dl: Int, dc: Int): Int {
-        var l = l0
-        var c = c0
-        while (l < SIZE && c < SIZE && board[l][c] != 0) {
-            l += dl; c += dc;
-        }
-        if (l < SIZE && c < SIZE) return if (dl == 0) c else l
-        return -1
     }
 
 }
@@ -302,6 +271,24 @@ class Tests {
         )
     }
 
+
+    @Test
+    fun test4() {
+        test("""
+                . . .   5 8 4   . . .   |   3 6 2   5 8 4   9 1 7
+                . . .   2 1 9   . . .   |   5 4 7   2 1 9   3 6 8
+                . . .   7 6 3   . . .   |   8 9 1   7 6 3   2 4 5
+                                        |                          
+                2 7 8   6 4 5   1 3 9   |   2 7 8   6 4 5   1 3 9
+                1 5 9   3 2 7   4 8 6   |   1 5 9   3 2 7   4 8 6
+                6 3 4   8 9 1   5 7 2   |   6 3 4   8 9 1   5 7 2
+                                        |                         
+                . . .   1 3 2   . . .   |   7 8 5   1 3 2   6 9 4
+                . . .   9 5 8   . . .   |   4 1 6   9 5 8   7 2 3
+                . . .   4 7 6   . . .   |   9 2 3   4 7 6   8 5 1
+            """.trimIndent()
+        )
+    }
 
     fun test(statement: String) {
 
